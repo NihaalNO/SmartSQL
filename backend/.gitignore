@@ -1,0 +1,47 @@
+# ============================================================
+# Backend gitignore — FastAPI / Python
+# ============================================================
+
+# ── Environment & secrets ────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Python runtime ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+
+# ── Virtual environments ─────────────────────────────────────
+venv/
+.venv/
+env/
+ENV/
+
+# ── Package / build artefacts ────────────────────────────────
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+site/
+
+# ── Test & coverage ──────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Type-checker / linter caches ─────────────────────────────
+.mypy_cache/
+.ruff_cache/
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Seeder scripts (local-only utility) ──────────────────────
+seed_demo.py
