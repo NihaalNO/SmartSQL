@@ -1,12 +1,13 @@
 "use client"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { isLoggedIn } from "@/lib/auth"
+import { isLoggedIn, isAdmin } from "@/lib/auth"
 
 export default function Home() {
   const router = useRouter()
   useEffect(() => {
-    router.replace(isLoggedIn() ? "/dashboard" : "/login")
+    if (!isLoggedIn()) { router.replace("/login"); return }
+    router.replace(isAdmin() ? "/dashboard" : "/query")
   }, [router])
   return null
 }

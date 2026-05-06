@@ -3,7 +3,8 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Search, History, BookmarkCheck, Zap, TrendingUp, Clock } from "lucide-react"
 import { queryApi, schemaApi } from "@/lib/api"
-import { getUser } from "@/lib/auth"
+import { getUser, isAdmin } from "@/lib/auth"
+import { useRouter } from "next/navigation"
 import type { QueryLog, TableSchema } from "@/types"
 
 function StatCard({ label, value, icon, href }: { label: string; value: string | number; icon: React.ReactNode; href: string }) {
@@ -21,9 +22,14 @@ function StatCard({ label, value, icon, href }: { label: string; value: string |
 }
 
 export default function DashboardPage() {
+  const router = useRouter()
   const [logs, setLogs] = useState<QueryLog[]>([])
   const [saved, setSaved] = useState<number>(0)
   const [tables, setTables] = useState<TableSchema[]>([])
+
+  useEffect(() => {
+    if (!isAdmin()) router.replace("/query")
+  }, [router])
   const user = getUser()
 
   useEffect(() => {

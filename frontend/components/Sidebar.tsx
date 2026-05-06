@@ -17,7 +17,7 @@ export default function Sidebar() {
   const role = user?.role ?? ""
 
   const NAV = [
-    { href: "/dashboard", label: "Dashboard", icon: BarChart3,     roles: ["admin", "analyst", "viewer"] },
+    { href: "/dashboard", label: "Dashboard", icon: BarChart3,     roles: ["admin"] },
     { href: "/query",     label: "Query",      icon: Search,        roles: ["admin", "analyst", "viewer"] },
     { href: "/history",   label: "History",    icon: History,       roles: ["admin", "analyst", "viewer"] },
     { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck, roles: ["admin", "analyst"] },
