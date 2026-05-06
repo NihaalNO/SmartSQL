@@ -1,21 +1,30 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Database, History, BookmarkCheck, Search, Zap, LogOut, BarChart3 } from "lucide-react"
-import { logout, getUser } from "@/lib/auth"
+import { Database, History, BookmarkCheck, Search, Zap, LogOut, BarChart3, Shield } from "lucide-react"
+import { logout, getUser, hasRole } from "@/lib/auth"
 import { clsx } from "clsx"
 
-const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/query", label: "Query", icon: Search },
-  { href: "/history", label: "History", icon: History },
-  { href: "/saved", label: "Saved Queries", icon: BookmarkCheck },
-  { href: "/live-db", label: "Live DB Mode", icon: Zap },
-]
+const ROLE_BADGE: Record<string, { label: string; className: string }> = {
+  admin:   { label: "Admin",   className: "bg-red-900/40 text-red-300 border border-red-700" },
+  analyst: { label: "Analyst", className: "bg-blue-900/40 text-blue-300 border border-blue-700" },
+  viewer:  { label: "Viewer",  className: "bg-gray-700 text-gray-300 border border-gray-600" },
+}
 
 export default function Sidebar() {
   const pathname = usePathname()
   const user = getUser()
+  const role = user?.role ?? ""
+
+  const NAV = [
+    { href: "/dashboard", label: "Dashboard", icon: BarChart3,     roles: ["admin", "analyst", "viewer"] },
+    { href: "/query",     label: "Query",      icon: Search,        roles: ["admin", "analyst", "viewer"] },
+    { href: "/history",   label: "History",    icon: History,       roles: ["admin", "analyst", "viewer"] },
+    { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck, roles: ["admin", "analyst"] },
+    { href: "/live-db",   label: "Live DB Mode",  icon: Zap,           roles: ["admin", "analyst"] },
+  ].filter(item => item.roles.includes(role))
+
+  const badge = ROLE_BADGE[role]
 
   return (
     <aside className="w-60 min-h-screen bg-gray-900 text-gray-100 flex flex-col">
@@ -47,14 +56,20 @@ export default function Sidebar() {
       {/* User */}
       <div className="border-t border-gray-700 px-4 py-4">
         {user && (
-          <div className="mb-3">
+          <div className="mb-3 space-y-1">
             <p className="text-sm font-medium truncate">{user.full_name}</p>
-            <p className="text-xs text-gray-500 truncate">{user.role}</p>
+            <p className="text-xs text-gray-500 truncate">{user.email}</p>
+            {badge && (
+              <span className={clsx("inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium", badge.className)}>
+                <Shield size={10} />
+                {badge.label}
+              </span>
+            )}
           </div>
         )}
         <button
           onClick={logout}
-          className="flex items-center gap-2 text-sm text-gray-400 hover:text-red-400 transition-colors"
+          className="flex items-center gap-2 text-sm text-gray-400 hover:text-red-400 transition-colors mt-1"
         >
           <LogOut size={16} />
           Sign out

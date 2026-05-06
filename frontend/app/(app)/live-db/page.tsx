@@ -1,9 +1,11 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { Zap, AlertTriangle, Eye, EyeOff, Info } from "lucide-react"
 import toast from "react-hot-toast"
 import { queryApi } from "@/lib/api"
+import { canUseLiveDb } from "@/lib/auth"
 import SQLPreview from "@/components/SQLPreview"
 import ResultsTable from "@/components/ResultsTable"
 import ChartView from "@/components/ChartView"
@@ -18,12 +20,17 @@ interface CredForm {
 }
 
 export default function LiveDbPage() {
+  const router = useRouter()
   const [connected, setConnected] = useState(false)
   const [creds, setCreds] = useState<CredForm | null>(null)
   const [showPw, setShowPw] = useState(false)
   const [question, setQuestion] = useState("")
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<QueryResult | null>(null)
+
+  useEffect(() => {
+    if (!canUseLiveDb()) router.replace("/query")
+  }, [router])
 
   const { register, handleSubmit, formState: { errors } } = useForm<CredForm>({
     defaultValues: { db_port: 5432 },

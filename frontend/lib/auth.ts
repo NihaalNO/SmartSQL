@@ -32,3 +32,16 @@ export function logout() {
 export function isLoggedIn(): boolean {
   return !!Cookies.get("token")
 }
+
+export function getRole(): string {
+  return getUser()?.role ?? ""
+}
+
+export function hasRole(...roles: string[]): boolean {
+  return roles.includes(getRole())
+}
+
+// Convenience shorthands
+export const canSaveQueries = () => hasRole("admin", "analyst")
+export const canUseLiveDb   = () => hasRole("admin", "analyst")
+export const isAdmin        = () => hasRole("admin")

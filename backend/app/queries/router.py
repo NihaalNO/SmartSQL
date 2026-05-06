@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db import get_db
 from app import models
-from app.auth.utils import get_current_user
+from app.auth.utils import get_current_user, require_role
 from app.queries import schemas
 from app.queries.sql_validator import validate_sql
 from app.queries.sql_executor import execute_sql, execute_sql_on_external
@@ -48,7 +48,7 @@ def _log_query(
 def run_query(
     payload: schemas.QueryRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role("admin", "analyst", "viewer")),
 ):
     provider = payload.model_provider
     schema_text = get_internal_schema(db)
@@ -94,7 +94,7 @@ def run_query(
 def run_live_query(
     payload: schemas.LiveQueryRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role("admin", "analyst")),
 ):
     # Build ephemeral connection string - password never stored
     conn_str = (
@@ -146,7 +146,7 @@ def run_live_query(
 def save_query(
     payload: schemas.SaveQueryRequest,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role("admin", "analyst")),
 ):
     log = db.query(models.QueryLog).filter(
         models.QueryLog.id == payload.log_id,
@@ -173,7 +173,7 @@ def save_query(
 @router.get("/saved", response_model=list[schemas.SavedQueryOut])
 def list_saved(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role("admin", "analyst")),
 ):
     return db.query(models.SavedQuery).filter(
         models.SavedQuery.user_id == current_user.id
@@ -184,7 +184,7 @@ def list_saved(
 def delete_saved(
     saved_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_user),
+    current_user: models.User = Depends(require_role("admin", "analyst")),
 ):
     saved = db.query(models.SavedQuery).filter(
         models.SavedQuery.id == saved_id,

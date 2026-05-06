@@ -7,6 +7,7 @@ import SQLPreview from "@/components/SQLPreview"
 import ResultsTable from "@/components/ResultsTable"
 import ChartView from "@/components/ChartView"
 import { queryApi } from "@/lib/api"
+import { canSaveQueries } from "@/lib/auth"
 import type { QueryResult } from "@/types"
 
 export default function QueryPage() {
@@ -96,13 +97,15 @@ export default function QueryPage() {
 
           {/* Actions bar */}
           <div className="flex items-center gap-3 flex-wrap">
-            <button
-              onClick={() => setShowSave(!showSave)}
-              className="flex items-center gap-2 text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              <BookmarkPlus size={15} />
-              Save Query
-            </button>
+            {canSaveQueries() && (
+              <button
+                onClick={() => setShowSave(!showSave)}
+                className="flex items-center gap-2 text-sm px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <BookmarkPlus size={15} />
+                Save Query
+              </button>
+            )}
             <div className="flex items-center gap-2 ml-auto">
               <span className="text-xs text-gray-500">Was this helpful?</span>
               <button onClick={() => handleFeedback(5)} className="p-1.5 rounded hover:bg-green-50 text-gray-400 hover:text-green-500">
