@@ -5,6 +5,8 @@
 # ── Sensitive / planning documents (never push) ─────────────
 schema.sql
 text-to-sql-analytics-portal-prd.md
+CUsersodath.claudescreen_response.json
+DESIGN.md
 
 # ── OS artefacts ────────────────────────────────────────────
 .DS_Store
