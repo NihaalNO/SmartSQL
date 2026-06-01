@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>SmartSQL | AI-Powered SQL Workspace</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<!-- Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary": "#003594",
+                    "tertiary-fixed-dim": "#d2bbff",
+                    "outline": "#737685",
+                    "on-secondary-container": "#5c6274",
+                    "on-tertiary-fixed-variant": "#5a00c6",
+                    "surface-bright": "#f9f9ff",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#dce2f7",
+                    "on-tertiary-fixed": "#25005a",
+                    "on-error": "#ffffff",
+                    "surface-dim": "#d3daea",
+                    "on-tertiary": "#ffffff",
+                    "outline-variant": "#c3c6d6",
+                    "inverse-surface": "#2a313d",
+                    "surface-tint": "#1b55d0",
+                    "inverse-primary": "#b4c5ff",
+                    "surface-container-highest": "#dce2f3",
+                    "primary-container": "#004ac6",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f9f9ff",
+                    "secondary-container": "#d9dff5",
+                    "on-primary-fixed": "#00174b",
+                    "on-secondary-fixed-variant": "#404758",
+                    "on-secondary-fixed": "#141b2b",
+                    "error-container": "#ffdad6",
+                    "surface-container": "#e7eefe",
+                    "on-surface-variant": "#434654",
+                    "surface-container-high": "#e2e8f8",
+                    "surface-container-low": "#f0f3ff",
+                    "on-secondary": "#ffffff",
+                    "background": "#f9f9ff",
+                    "on-primary-fixed-variant": "#003ea8",
+                    "on-surface": "#151c27",
+                    "tertiary-fixed": "#eaddff",
+                    "on-error-container": "#93000a",
+                    "surface-variant": "#dce2f3",
+                    "secondary-fixed-dim": "#c0c6db",
+                    "on-tertiary-container": "#d5bfff",
+                    "primary-fixed-dim": "#b4c5ff",
+                    "on-background": "#151c27",
+                    "primary-fixed": "#dbe1ff",
+                    "tertiary": "#4e00ae",
+                    "on-primary-container": "#b8c8ff",
+                    "inverse-on-surface": "#ebf1ff",
+                    "tertiary-container": "#691dda",
+                    "on-primary": "#ffffff",
+                    "secondary": "#575e70"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "sidebar-width": "240px",
+                    "xs": "4px",
+                    "base": "8px",
+                    "gutter": "16px",
+                    "container-max": "1280px",
+                    "md": "16px",
+                    "xl": "32px",
+                    "lg": "24px"
+            },
+            "fontFamily": {
+                    "title-sm": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-sm": ["Inter"],
+                    "display": ["Inter"],
+                    "code-sm": ["JetBrains Mono"],
+                    "title-md": ["Inter"],
+                    "body-md": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "code-md": ["JetBrains Mono"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "title-sm": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+                    "headline-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-md": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "headline-sm": ["22px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "display": ["60px", {"lineHeight": "66px", "letterSpacing": "-0.04em", "fontWeight": "800"}],
+                    "code-sm": ["11px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "title-md": ["16px", {"lineHeight": "24px", "fontWeight": "600"}],
+                    "body-md": ["14px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "title-lg": ["18px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "code-md": ["13px", {"lineHeight": "22px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .canvas-bg {
+            background-image: radial-gradient(circle at 2px 2px, rgba(0, 53, 148, 0.05) 1px, transparent 0);
+            background-size: 32px 32px;
+        }
+        .ai-glow {
+            box-shadow: 0 0 40px -10px rgba(105, 29, 218, 0.3);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .floating { animation: float 6s ease-in-out infinite; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background selection:bg-primary-container selection:text-white font-body-md overflow-x-hidden">
+<!-- Background Animation Layer -->
+<div class="fixed inset-0 pointer-events-none z-[-1] overflow-hidden">
+<canvas class="absolute inset-0 w-full h-full" id="particleCanvas"></canvas>
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-tertiary-container/5 rounded-full blur-[120px]"></div>
+<div class="canvas-bg absolute inset-0 opacity-40"></div>
+</div>
+<!-- Navigation -->
+<header class="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-outline-variant/30">
+<nav class="flex justify-between items-center max-w-container-max mx-auto px-lg h-16">
+<div class="flex items-center gap-base">
+<span class="material-symbols-outlined text-primary text-headline-sm" data-icon="terminal">terminal</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">SmartSQL</span>
+</div>
+<div class="hidden md:flex items-center gap-lg">
+<a class="text-primary font-bold border-b-2 border-primary transition-all" href="#">Product</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Features</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Docs</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Pricing</a>
+</div>
+<div class="flex items-center gap-md">
+<button class="hidden sm:block text-primary font-title-sm px-md py-xs hover:bg-surface-container transition-colors rounded-lg">Sign In</button>
+<button class="bg-primary text-on-primary px-md py-base rounded-lg font-title-sm shadow-sm hover:translate-y-[-1px] active:translate-y-[0px] transition-all">Get Started Free</button>
+</div>
+</nav>
+</header>
+<main class="pt-32">
+<!-- Hero Section -->
+<section class="max-w-container-max mx-auto px-lg flex flex-col items-center text-center mb-32">
+<div class="inline-flex items-center gap-xs px-md py-xs rounded-full bg-surface-container-high border border-outline-variant/50 text-label-md text-primary mb-lg">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span>v2.0 Now with Predictive Indexing</span>
+</div>
+<h1 class="font-display text-display max-w-4xl mb-md tracking-tight leading-tight">
+                Query <span class="text-primary">Smarter</span>, <br/> Not Harder
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mb-xl">
+                Harness the power of AI to write, optimize, and visualize SQL in seconds. Connect your data and let our LLMs handle the complexity of schemas and optimizations.
+            </p>
+<div class="flex flex-col sm:flex-row gap-md">
+<button class="bg-primary text-on-primary px-xl py-md rounded-xl font-title-lg shadow-lg hover:shadow-primary/20 hover:translate-y-[-2px] transition-all flex items-center gap-base">
+                    Get Started Free
+                    <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+<button class="bg-white border border-outline-variant text-on-surface px-xl py-md rounded-xl font-title-lg hover:bg-surface-container-low transition-all">
+                    Book a Demo
+                </button>
+</div>
+<!-- Terminal Mockup -->
+<div class="mt-xl w-full max-w-5xl rounded-xl border border-outline-variant/50 bg-inverse-surface shadow-2xl overflow-hidden floating">
+<div class="flex items-center gap-xs px-md py-base border-b border-white/10 bg-white/5">
+<div class="w-3 h-3 rounded-full bg-error/40"></div>
+<div class="w-3 h-3 rounded-full bg-secondary-fixed-dim/40"></div>
+<div class="w-3 h-3 rounded-full bg-primary/40"></div>
+<span class="ml-base font-code-sm text-outline-variant">workspace_prod_v2.sql</span>
+</div>
+<div class="flex flex-col md:flex-row h-[400px]">
+<div class="w-full md:w-sidebar-width bg-black/20 border-r border-white/10 p-md hidden md:block">
+<div class="space-y-sm">
+<div class="text-label-sm text-outline uppercase tracking-widest">Schemas</div>
+<div class="flex items-center gap-xs text-on-primary-container text-body-md">
+<span class="material-symbols-outlined text-[18px]">database</span> users_table
+                            </div>
+<div class="flex items-center gap-xs text-outline-variant text-body-md opacity-60">
+<span class="material-symbols-outlined text-[18px]">database</span> transaction_log
+                            </div>
+<div class="flex items-center gap-xs text-outline-variant text-body-md opacity-60">
+<span class="material-symbols-outlined text-[18px]">database</span> metadata_v3
+                            </div>
+</div>
+</div>
+<div class="flex-1 p-lg font-code-md text-white/90 text-left overflow-auto">
+<div class="flex items-start gap-md mb-lg">
+<span class="text-tertiary-fixed-dim shrink-0">AI &gt; </span>
+<div class="text-on-primary-container italic">"Show me the top 5 users by spend in the last 30 days, grouped by region."</div>
+</div>
+<div class="space-y-1">
+<div class="flex gap-md"><span class="text-outline/50">1</span> <span class="text-primary-fixed-dim">SELECT</span> u.name, <span class="text-primary-fixed-dim">SUM</span>(t.amount) <span class="text-primary-fixed-dim">AS</span> total_spend</div>
+<div class="flex gap-md"><span class="text-outline/50">2</span> <span class="text-primary-fixed-dim">FROM</span> users u</div>
+<div class="flex gap-md"><span class="text-outline/50">3</span> <span class="text-primary-fixed-dim">JOIN</span> transactions t <span class="text-primary-fixed-dim">ON</span> u.id = t.user_id</div>
+<div class="flex gap-md"><span class="text-outline/50">4</span> <span class="text-primary-fixed-dim">WHERE</span> t.created_at &gt;= <span class="text-tertiary-fixed-dim">NOW</span>() - <span class="text-tertiary-fixed-dim">INTERVAL</span> <span class="text-error-container">'30 days'</span></div>
+<div class="flex gap-md"><span class="text-outline/50">5</span> <span class="text-primary-fixed-dim">GROUP BY</span> u.region, u.name</div>
+<div class="flex gap-md"><span class="text-outline/50">6</span> <span class="text-primary-fixed-dim">ORDER BY</span> total_spend <span class="text-primary-fixed-dim">DESC</span></div>
+<div class="flex gap-md"><span class="text-outline/50">7</span> <span class="text-primary-fixed-dim">LIMIT</span> 5;</div>
+</div>
+<div class="mt-lg p-md rounded-lg bg-tertiary-container/20 border border-tertiary-container/30 flex items-center justify-between">
+<div class="flex items-center gap-base">
+<span class="material-symbols-outlined text-tertiary-fixed-dim" style="font-variation-settings: 'FILL' 1;">speed</span>
+<span class="text-body-md">Query Optimized: 420ms execution time.</span>
+</div>
+<button class="bg-tertiary-container text-white px-md py-xs rounded-md text-label-md">Apply Index Sugestion</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Social Proof -->
+<section class="py-xl bg-surface-container-low/50 border-y border-outline-variant/20 mb-32">
+<div class="max-w-container-max mx-auto px-lg">
+<p class="text-center text-label-md text-outline mb-lg uppercase tracking-widest">Trusted by engineering teams at</p>
+<div class="flex flex-wrap justify-center items-center gap-xl md:gap-32 grayscale opacity-50">
+<div class="flex items-center gap-xs font-headline-sm"><span class="material-symbols-outlined">rocket_launch</span> VELOCITY</div>
+<div class="flex items-center gap-xs font-headline-sm"><span class="material-symbols-outlined">cloud</span> NEBULA</div>
+<div class="flex items-center gap-xs font-headline-sm"><span class="material-symbols-outlined">shield</span> GUARDIAN</div>
+<div class="flex items-center gap-xs font-headline-sm"><span class="material-symbols-outlined">hub</span> CORE</div>
+</div>
+</div>
+</section>
+<!-- Features Grid -->
+<section class="max-w-container-max mx-auto px-lg mb-32">
+<div class="text-center mb-xl">
+<h2 class="font-headline-lg text-headline-lg mb-md">Built for Modern Data Stacks</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">Everything you need to manage your database workflow without the manual grind.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-lg">
+<!-- Feature 1 -->
+<div class="group bg-white p-lg rounded-xl border border-outline-variant/50 hover:border-primary transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center mb-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">translate</span>
+</div>
+<h3 class="font-title-lg text-title-lg mb-base">Natural Language Queries</h3>
+<p class="text-on-surface-variant font-body-md">Stop memorizing table names and joins. Write questions in plain English and watch SmartSQL generate production-ready code instantly.</p>
+</div>
+<!-- Feature 2 -->
+<div class="group bg-white p-lg rounded-xl border border-outline-variant/50 hover:border-primary transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center mb-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<h3 class="font-title-lg text-title-lg mb-base">Intelligent Optimization</h3>
+<p class="text-on-surface-variant font-body-md">Our engine analyzes your query patterns to suggest missing indexes and rewrite slow subqueries for maximum performance.</p>
+</div>
+<!-- Feature 3 -->
+<div class="group bg-white p-lg rounded-xl border border-outline-variant/50 hover:border-primary transition-all duration-300 hover:shadow-xl hover:shadow-primary/5">
+<div class="w-12 h-12 bg-primary-container/10 text-primary rounded-lg flex items-center justify-center mb-lg group-hover:bg-primary group-hover:text-white transition-colors">
+<span class="material-symbols-outlined">query_stats</span>
+</div>
+<h3 class="font-title-lg text-title-lg mb-base">Live Visualizer</h3>
+<p class="text-on-surface-variant font-body-md">Instantly generate ER diagrams and data flow maps from your existing database schema with one click. No manual drawing required.</p>
+</div>
+</div>
+</section>
+<!-- Asymmetric Visual Content Section -->
+<section class="max-w-container-max mx-auto px-lg mb-32 grid grid-cols-1 lg:grid-cols-2 gap-xl items-center">
+<div class="order-2 lg:order-1">
+<div class="relative rounded-2xl overflow-hidden border border-outline-variant/50 shadow-2xl bg-surface">
+<img class="w-full h-auto" data-alt="A high-tech workspace featuring a large curved monitor displaying complex data visualizations and SQL code blocks. The environment is a professional, minimalist office at night with moody blue ambient lighting. Soft glowing violet accents highlight the AI-driven data nodes. The aesthetic is clean, sophisticated, and focused on advanced data engineering." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCpnM_1LtwGBvJUXUAXlVSwg4FbdHr_R_If-Q_a3bjs-u5v6DUyQw-mzOnajTDDnzgcxYTw3Vyn9vyDv-JypTtt7wL3VfbPA0WzNPFqi5giPPrLoUfDchTpb_qkDxJ9qgir6s0NBSjP2YtN004qRjSCGtfILusWjknqQbG-ini0cWBSK8EsrKTZumItuL-pKbq1y_eJc7WIaL9RXV38D3cgAlqtC1p8qSn8EIaAGhSY4gkIg5lidDFHURbVKcbG7ZKHq7kIBL9RaJCQ"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent"></div>
+</div>
+</div>
+<div class="order-1 lg:order-2 space-y-lg">
+<span class="text-primary font-label-md tracking-widest uppercase">The SmartSQL Difference</span>
+<h2 class="font-headline-lg text-headline-lg leading-tight">From Idea to Query <br/> in Milliseconds</h2>
+<div class="space-y-md">
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-title-md text-title-md">Universal Connectivity</p>
+<p class="text-on-surface-variant">One-click connect for PostgreSQL, MySQL, Snowflake, and BigQuery.</p>
+</div>
+</div>
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-title-md text-title-md">Team Collaboration</p>
+<p class="text-on-surface-variant">Share optimized query snippets and database documentation across your team.</p>
+</div>
+</div>
+<div class="flex gap-md">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-title-md text-title-md">Enterprise Security</p>
+<p class="text-on-surface-variant">SOC2 Type II compliant with end-to-end encryption for all database credentials.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Final -->
+<section class="max-w-container-max mx-auto px-lg mb-32">
+<div class="bg-inverse-surface rounded-[2rem] p-xl md:p-32 text-center relative overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/20 to-tertiary/20"></div>
+<div class="relative z-10">
+<h2 class="font-display text-[42px] leading-tight text-white mb-lg">Ready to Supercharge <br/> Your Workflow?</h2>
+<p class="text-surface-variant text-body-lg max-w-xl mx-auto mb-xl">Join 50,000+ developers who write faster, better SQL with SmartSQL.</p>
+<button class="bg-primary text-on-primary px-xl py-md rounded-xl font-title-lg shadow-lg hover:shadow-primary/50 hover:translate-y-[-2px] transition-all">
+                        Get Started for Free
+                    </button>
+<p class="mt-md text-outline-variant text-label-md">No credit card required • 14-day free pro trial</p>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-inverse-surface dark:bg-surface-container-lowest w-full py-xl text-surface-variant">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-lg max-w-container-max mx-auto px-lg">
+<div class="col-span-1 lg:col-span-1">
+<div class="flex items-center gap-base mb-md">
+<span class="material-symbols-outlined text-primary text-headline-sm" data-icon="terminal">terminal</span>
+<span class="font-headline-sm text-headline-sm font-extrabold text-white">SmartSQL</span>
+</div>
+<p class="font-body-md text-body-md text-outline-variant mb-lg">Precision in every query. The definitive AI workspace for data professionals.</p>
+</div>
+<div>
+<h4 class="text-white font-title-md mb-md">Product</h4>
+<ul class="space-y-sm">
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Features</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Security</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Integrations</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Pricing</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-title-md mb-md">Resources</h4>
+<ul class="space-y-sm">
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Documentation</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">API Reference</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Changelog</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Community</a></li>
+</ul>
+</div>
+<div>
+<h4 class="text-white font-title-md mb-md">Company</h4>
+<ul class="space-y-sm">
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">About Us</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Careers</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-tertiary-fixed-dim transition-colors duration-200" href="#">Terms of Service</a></li>
+</ul>
+</div>
+</div>
+<div class="max-w-container-max mx-auto px-lg mt-xl pt-lg border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-md">
+<p class="font-body-md text-body-md text-outline-variant">© 2024 SmartSQL AI. Precision in every query.</p>
+<div class="flex gap-lg">
+<a class="material-symbols-outlined text-outline-variant hover:text-white transition-colors" href="#">brand_awareness</a>
+<a class="material-symbols-outlined text-outline-variant hover:text-white transition-colors" href="#">share</a>
+<a class="material-symbols-outlined text-outline-variant hover:text-white transition-colors" href="#">alternate_email</a>
+</div>
+</div>
+</footer>
+<script>
+        // Micro-interaction for smooth scrolling or hover effects
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId !== "#") {
+                    document.querySelector(targetId).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+
+        // Particle System Animation
+        (function() {
+            const canvas = document.getElementById('particleCanvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+            let animationFrameId;
+
+            // Check for reduced motion preference
+            const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            function resize() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            class Particle {
+                constructor() {
+                    this.init();
+                }
+
+                init() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 2 + 1;
+                    this.speedX = (Math.random() - 0.5) * 0.3;
+                    this.speedY = (Math.random() - 0.5) * 0.3;
+                    this.opacity = Math.random() * 0.5;
+                    this.fadeSpeed = Math.random() * 0.005 + 0.002;
+                    this.growing = Math.random() > 0.5;
+                }
+
+                update() {
+                    this.x += this.speedX;
+                    this.y += this.speedY;
+
+                    if (this.growing) {
+                        this.opacity += this.fadeSpeed;
+                        if (this.opacity >= 0.6) this.growing = false;
+                    } else {
+                        this.opacity -= this.fadeSpeed;
+                        if (this.opacity <= 0) this.init();
+                    }
+
+                    // Wrap around screen
+                    if (this.x < 0) this.x = canvas.width;
+                    if (this.x > canvas.width) this.x = 0;
+                    if (this.y < 0) this.y = canvas.height;
+                    if (this.y > canvas.height) this.y = 0;
+                }
+
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(100, 149, 237, ${this.opacity})`; // Soft blue
+                    ctx.fill();
+                }
+            }
+
+            function initParticles() {
+                particles = [];
+                const count = Math.floor((canvas.width * canvas.height) / 15000);
+                for (let i = 0; i < count; i++) {
+                    particles.push(new Particle());
+                }
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                animationFrameId = requestAnimationFrame(animate);
+            }
+
+            // Start logic
+            if (!prefersReducedMotion) {
+                window.addEventListener('resize', () => {
+                    resize();
+                    initParticles();
+                });
+
+                resize();
+                initParticles();
+                animate();
+            } else {
+                // Static version for reduced motion
+                resize();
+                initParticles();
+                particles.forEach(p => {
+                    p.opacity = 0.2; // Fixed subtle opacity
+                    p.draw();
+                });
+            }
+        })();
+    </script>
+</body></html>

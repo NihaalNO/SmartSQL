@@ -1,12 +1,16 @@
 "use client"
 import Link from "next/link"
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
-  Database, MessageSquare, BarChart3, ShieldCheck,
-  CheckCircle, ArrowRight, Star,
+  CheckCircle, ArrowRight,
+  Languages, Zap, BarChart3,
 } from "lucide-react"
 import { isLoggedIn, isAdmin } from "@/lib/auth"
+
+// ---------------------------------------------------------------------------
+// Auth redirect
+// ---------------------------------------------------------------------------
 
 function useAuthRedirect() {
   const router = useRouter()
@@ -15,336 +19,486 @@ function useAuthRedirect() {
   }, [router])
 }
 
+// ---------------------------------------------------------------------------
+// Particle canvas
+// ---------------------------------------------------------------------------
+
+function ParticleCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")!
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    let animId: number
+
+    interface Particle {
+      x: number; y: number; size: number
+      speedX: number; speedY: number
+      opacity: number; fadeSpeed: number; growing: boolean
+    }
+    let particles: Particle[] = []
+
+    const resize = () => {
+      canvas.width  = window.innerWidth
+      canvas.height = window.innerHeight
+    }
+
+    const makeParticle = (): Particle => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size:      Math.random() * 2 + 1,
+      speedX:    (Math.random() - 0.5) * 0.3,
+      speedY:    (Math.random() - 0.5) * 0.3,
+      opacity:   Math.random() * 0.5,
+      fadeSpeed: Math.random() * 0.005 + 0.002,
+      growing:   Math.random() > 0.5,
+    })
+
+    const init = () => {
+      particles = Array.from(
+        { length: Math.floor((canvas.width * canvas.height) / 15000) },
+        makeParticle,
+      )
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height)
+      particles.forEach(p => {
+        p.x += p.speedX; p.y += p.speedY
+        if (p.growing) { p.opacity += p.fadeSpeed; if (p.opacity >= 0.6) p.growing = false }
+        else           { p.opacity -= p.fadeSpeed; if (p.opacity <= 0) Object.assign(p, makeParticle()) }
+        if (p.x < 0) p.x = canvas.width;  if (p.x > canvas.width)  p.x = 0
+        if (p.y < 0) p.y = canvas.height; if (p.y > canvas.height) p.y = 0
+        ctx.beginPath()
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(100,149,237,${p.opacity})`
+        ctx.fill()
+      })
+      animId = requestAnimationFrame(animate)
+    }
+
+    resize()
+    init()
+    if (prefersReducedMotion) {
+      particles.forEach(p => { p.opacity = 0.15; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fillStyle = `rgba(100,149,237,0.15)`; ctx.fill() })
+    } else {
+      animate()
+    }
+
+    const onResize = () => { resize(); init() }
+    window.addEventListener("resize", onResize)
+    return () => { window.removeEventListener("resize", onResize); cancelAnimationFrame(animId) }
+  }, [])
+
+  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+}
+
+// ---------------------------------------------------------------------------
+// Data
+// ---------------------------------------------------------------------------
+
 const FEATURES = [
   {
-    icon: MessageSquare,
-    title: "Natural Language Processing",
-    desc: "Ask questions in plain English. Our AI understands complex business logic and joins tables automatically.",
-    hoverBg: "#2563eb",
+    icon: Languages,
+    title: "Natural Language Queries",
+    desc: "Stop memorising table names and joins. Write questions in plain English and watch SmartSQL generate production-ready SQL instantly.",
+  },
+  {
+    icon: Zap,
+    title: "Intelligent Optimization",
+    desc: "Our engine analyses your query patterns to suggest missing indexes and rewrite slow subqueries for maximum performance.",
   },
   {
     icon: BarChart3,
-    title: "Instant Visualisation",
-    desc: "Automatic charts for every query. From bar graphs to heatmaps, we choose the best visual for your data.",
-    hoverBg: "#6a1edb",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Enterprise Security",
-    desc: "Role-based access control and read-only validation. Only SELECT queries execute — writes are blocked at the API layer.",
-    hoverBg: "#1d4ed8",
+    title: "Live Visualizer",
+    desc: "Instantly generate charts and data insights from your query results. No manual configuration — the best visual is chosen automatically.",
   },
 ]
 
-const STEPS = [
-  {
-    num: "01", title: "Connect Data",
-    desc: "Securely connect your MySQL or Supabase database. We introspect your schema metadata instantly.",
-    color: "#004ac6", hoverColor: "#22d3ee",
-  },
-  {
-    num: "02", title: "Ask a Question",
-    desc: "Type any business question in plain English. No more waiting for the data team to build a custom report.",
-    color: "#6a1edb", hoverColor: "#a78bfa",
-  },
-  {
-    num: "03", title: "Get Insights",
-    desc: "Receive a validated SQL query, an interactive chart, and an AI-generated insight summary.",
-    color: "#22c55e", hoverColor: "#34d399",
-  },
-]
 
-const DEMO_CREDS = [
-  { role: "Admin",   email: "admin@smartsql.com",   password: "admin123",   badge: "bg-red-100 text-red-700",   card: "border-red-200 bg-red-50" },
-  { role: "Analyst", email: "analyst@smartsql.com", password: "analyst123", badge: "bg-blue-100 text-blue-700", card: "border-blue-200 bg-blue-50" },
-  { role: "Viewer",  email: "viewer@smartsql.com",  password: "viewer123",  badge: "bg-gray-100 text-gray-700", card: "border-gray-200 bg-gray-50" },
-]
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export default function HomePage() {
   useAuthRedirect()
 
   return (
-    <div className="font-body-md text-on-surface overflow-x-hidden" style={{ backgroundColor: "#f9fafb" }}>
+    <div className="font-body-md text-on-surface overflow-x-hidden" style={{ backgroundColor: "#f9f9ff" }}>
+
+      {/* ── Animated background (fixed, behind everything) ── */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <ParticleCanvas />
+        {/* Blobs */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full blur-[120px]"
+          style={{ background: "rgba(0,53,148,0.05)" }} />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full blur-[120px]"
+          style={{ background: "rgba(105,29,218,0.05)" }} />
+        {/* Dot grid */}
+        <div className="absolute inset-0 opacity-40" style={{
+          backgroundImage: "radial-gradient(circle at 2px 2px, rgba(0,53,148,0.05) 1px, transparent 0)",
+          backgroundSize: "32px 32px",
+        }} />
+      </div>
 
       {/* ── Navbar ── */}
-      <header className="sticky top-0 w-full z-50 backdrop-blur-md border-b shadow-sm"
-        style={{ backgroundColor: "rgba(255,255,255,0.80)", borderColor: "rgba(229,231,235,0.10)" }}>
-        <div className="max-w-container-max-xl mx-auto px-page-p flex justify-between items-center h-16">
-          <div className="flex items-center gap-base">
-            <Database size={22} className="text-primary" />
-            <span className="text-title-lg font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>SmartSQL</span>
+      <header className="fixed top-0 w-full z-50 border-b"
+        style={{ background: "rgba(249,249,255,0.80)", backdropFilter: "blur(12px)", borderColor: "rgba(195,198,214,0.30)" }}>
+        <nav className="flex justify-between items-center max-w-6xl mx-auto px-6 h-16">
+          <div className="flex items-center gap-2">
+            {/* Terminal icon */}
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#004ac6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+            <span className="text-headline-sm font-bold text-primary">SmartSQL</span>
           </div>
-          <nav className="hidden md:flex items-center gap-xl">
-            <a href="#features"     className="text-label-lg font-bold text-primary border-b-2 border-primary transition-colors">Features</a>
-            <a href="#how-it-works" className="text-label-lg text-on-surface-variant hover:text-primary transition-colors">How it Works</a>
-            <a href="#demo"         className="text-label-lg text-on-surface-variant hover:text-primary transition-colors">Try It</a>
-          </nav>
-          <div className="flex items-center gap-md">
-            <Link href="/login" className="hidden sm:block text-on-surface-variant text-label-lg hover:text-on-surface transition-all">
+          <div className="hidden md:flex items-center gap-6">
+            <a href="#features"     className="text-primary font-semibold border-b-2 border-primary text-label-lg">Features</a>
+            <a href="#how-it-works" className="text-on-surface-variant hover:text-primary transition-colors text-label-lg">How it Works</a>
+            <a href="#demo"         className="text-on-surface-variant hover:text-primary transition-colors text-label-lg">Try It</a>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/login"
+              className="hidden sm:block text-primary font-title-sm px-4 py-1.5 rounded-lg hover:bg-surface-container transition-colors">
               Sign In
             </Link>
             <Link href="/register"
-              className="bg-primary text-on-primary px-lg py-sm rounded-lg text-label-lg font-semibold active:scale-95 transition-all shadow-sm"
-              style={{ transition: "background 200ms, box-shadow 200ms" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#8343f4"; e.currentTarget.style.boxShadow = "0 10px 25px -5px rgba(131,67,244,0.35)"; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#004ac6"; e.currentTarget.style.boxShadow = ""; }}>
-              Get Started
+              className="bg-primary text-on-primary px-4 py-2 rounded-lg font-title-sm shadow-sm transition-all hover:-translate-y-px active:translate-y-0">
+              Get Started Free
             </Link>
           </div>
-        </div>
+        </nav>
       </header>
 
-      {/* ── Hero ── */}
-      <section className="hero-vibrant-bg pt-3xl pb-3xl px-page-p overflow-hidden relative">
-        <div className="vibrant-blob" style={{ backgroundColor: "rgba(0,74,198,0.20)", top: "-80px", left: "-80px" }} />
-        <div className="vibrant-blob" style={{ backgroundColor: "rgba(106,30,219,0.20)", bottom: "-80px", right: "-80px" }} />
+      <main className="relative z-10 pt-32">
 
-        <div className="max-w-container-max-xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-3xl items-center relative z-10">
-          {/* Left */}
-          <div className="flex flex-col gap-lg max-w-container-max-sm">
-            <h1 className="text-display font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>
-              From natural language to{" "}
-              <span className="gradient-text">SQL insights</span>
-              {" "}in seconds.
-            </h1>
-            <p className="text-body-lg text-on-surface-variant">
-              The professional data-intelligence tool for teams who want answers, not syntax errors.
-              Connect your database and start chatting with your data.
-            </p>
-            <div className="flex flex-wrap gap-md mt-md">
-              <Link href="/register"
-                className="bg-primary text-on-primary px-xl py-md rounded-lg text-title-md font-semibold active:scale-95 transition-all shadow-lg"
-                style={{ boxShadow: "0 10px 15px -3px rgba(0,74,198,0.20)", transition: "background 200ms, box-shadow 200ms" }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#8343f4"; e.currentTarget.style.boxShadow = "0 20px 25px -5px rgba(131,67,244,0.35)"; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#004ac6"; e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0,74,198,0.20)"; }}>
-                Get Started for Free
-              </Link>
-              <Link href="/login"
-                className="border bg-surface text-on-surface-variant px-xl py-md rounded-lg text-title-md font-semibold transition-all"
-                style={{ borderColor: "#e5e7eb" }}
-                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#f3f4f6"; e.currentTarget.style.borderColor = "rgba(0,74,198,0.50)"; }}
-                onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#ffffff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}>
-                Sign In
-              </Link>
+        {/* ── Hero ── */}
+        <section className="max-w-6xl mx-auto px-6 flex flex-col items-center text-center mb-32">
+
+          {/* Badge */}
+          <div className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full border text-label-md text-primary mb-6"
+            style={{ background: "#e2e8f8", borderColor: "rgba(195,198,214,0.50)" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="#004ac6" stroke="none">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            <span>v2.0 Now with Predictive Indexing</span>
+          </div>
+
+          <h1 className="font-bold mb-4 tracking-tight"
+            style={{ fontFamily: "Inter,sans-serif", fontSize: "clamp(40px,7vw,60px)", lineHeight: 1.1 }}>
+            Query <span className="text-primary">Smarter</span>,{" "}<br />Not Harder
+          </h1>
+
+          <p className="text-body-lg text-on-surface-variant max-w-2xl mb-8">
+            Harness the power of AI to write, optimise, and visualise SQL in seconds.
+            Connect your data and let our LLMs handle the complexity of schemas and optimisations.
+          </p>
+
+          <div className="flex flex-col sm:flex-row gap-4 mb-12">
+            <Link href="/register"
+              className="flex items-center gap-2 bg-primary text-on-primary px-8 py-3.5 rounded-xl font-title-lg shadow-lg transition-all hover:-translate-y-0.5 hover:shadow-primary/20">
+              Get Started Free
+              <ArrowRight size={18} />
+            </Link>
+            <Link href="/login"
+              className="bg-white border text-on-surface px-8 py-3.5 rounded-xl font-title-lg transition-all hover:bg-surface-container-low"
+              style={{ borderColor: "#c3c6d7" }}>
+              Sign In
+            </Link>
+          </div>
+
+          {/* Floating terminal mockup */}
+          <div className="w-full max-w-5xl rounded-xl border overflow-hidden shadow-2xl"
+            style={{
+              background: "#1e2433",
+              borderColor: "rgba(255,255,255,0.10)",
+              boxShadow: "0 0 40px -10px rgba(105,29,218,0.30)",
+              animation: "float 6s ease-in-out infinite",
+            }}>
+            {/* Title bar */}
+            <div className="flex items-center gap-1.5 px-4 py-2.5 border-b"
+              style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.10)" }}>
+              <div className="w-3 h-3 rounded-full" style={{ background: "rgba(239,68,68,0.5)" }} />
+              <div className="w-3 h-3 rounded-full" style={{ background: "rgba(234,179,8,0.5)" }} />
+              <div className="w-3 h-3 rounded-full" style={{ background: "rgba(34,197,94,0.5)" }} />
+              <span className="ml-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>
+                workspace_prod_v2.sql
+              </span>
+            </div>
+
+            <div className="flex h-80 md:h-96">
+              {/* Schema sidebar */}
+              <div className="hidden md:flex flex-col w-48 border-r p-4 gap-3"
+                style={{ background: "rgba(0,0,0,0.20)", borderColor: "rgba(255,255,255,0.08)" }}>
+                <span className="text-label-sm uppercase tracking-widest" style={{ color: "#737685" }}>Schemas</span>
+                {[
+                  { name: "users_table",    active: true  },
+                  { name: "transaction_log", active: false },
+                  { name: "metadata_v3",     active: false },
+                ].map(({ name, active }) => (
+                  <div key={name} className="flex items-center gap-1.5 text-sm"
+                    style={{ color: active ? "#b4c5ff" : "rgba(195,198,214,0.50)" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
+                    </svg>
+                    {name}
+                  </div>
+                ))}
+              </div>
+
+              {/* Code panel */}
+              <div className="flex-1 p-6 font-mono text-sm text-left overflow-auto space-y-4"
+                style={{ color: "rgba(255,255,255,0.90)", fontFamily: "'JetBrains Mono','Fira Code',monospace" }}>
+                {/* AI prompt */}
+                <div className="flex items-start gap-3">
+                  <span style={{ color: "#d2bbff" }}>AI &gt;</span>
+                  <span className="italic" style={{ color: "#b4c5ff" }}>
+                    &quot;Show me the top 5 users by spend in the last 30 days, grouped by region.&quot;
+                  </span>
+                </div>
+                {/* SQL lines */}
+                <div className="space-y-1">
+                  {[
+                    [<><span style={{color:"#818cf8"}}>SELECT</span> u.name, <span style={{color:"#60a5fa"}}>SUM</span>(t.amount) <span style={{color:"#818cf8"}}>AS</span> total_spend</>],
+                    [<><span style={{color:"#f472b6"}}>FROM</span> users u</>],
+                    [<><span style={{color:"#818cf8"}}>JOIN</span> transactions t <span style={{color:"#818cf8"}}>ON</span> u.id = t.user_id</>],
+                    [<><span style={{color:"#f472b6"}}>WHERE</span> t.created_at &gt;= <span style={{color:"#60a5fa"}}>NOW</span>() - <span style={{color:"#60a5fa"}}>INTERVAL</span> <span style={{color:"#34d399"}}>&apos;30 days&apos;</span></>],
+                    [<><span style={{color:"#818cf8"}}>GROUP BY</span> u.region, u.name</>],
+                    [<><span style={{color:"#818cf8"}}>ORDER BY</span> total_spend <span style={{color:"#818cf8"}}>DESC</span></>],
+                    [<><span style={{color:"#818cf8"}}>LIMIT</span> 5;</>],
+                  ].map((line, i) => (
+                    <div key={i} className="flex gap-4">
+                      <span style={{ color: "rgba(255,255,255,0.2)", minWidth: "20px" }}>{i + 1}</span>
+                      <code>{line[0]}</code>
+                    </div>
+                  ))}
+                </div>
+                {/* Optimization chip */}
+                <div className="flex items-center justify-between p-3 rounded-lg"
+                  style={{ background: "rgba(105,29,218,0.20)", border: "1px solid rgba(105,29,218,0.30)" }}>
+                  <div className="flex items-center gap-2 text-sm" style={{ color: "#d2bbff" }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#d2bbff" stroke="none">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                    Query Optimised: 420ms execution time.
+                  </div>
+                  <button className="text-xs px-3 py-1 rounded text-white"
+                    style={{ background: "rgba(105,29,218,0.60)" }}>
+                    Apply Index
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
+        </section>
 
-          {/* Right — terminal */}
-          <div className="relative">
-            <div className="absolute -inset-4 rounded-full blur-3xl" style={{ backgroundColor: "rgba(0,74,198,0.15)" }} />
-            <div className="relative bg-code-surface rounded-xl shadow-2xl overflow-hidden" style={{ border: "1px solid rgba(255,255,255,0.10)" }}>
-              <div className="px-md py-sm border-b flex items-center justify-between"
-                style={{ backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.05)" }}>
-                <div className="flex gap-xs">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "rgba(239,68,68,0.4)" }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "rgba(234,179,8,0.4)" }} />
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "rgba(34,197,94,0.4)" }} />
+        {/* ── Social proof ── */}
+        <section className="py-8 mb-32 border-y" style={{ background: "rgba(240,243,255,0.50)", borderColor: "rgba(195,198,214,0.20)" }}>
+          <div className="max-w-6xl mx-auto px-6">
+            <p className="text-center text-label-md text-on-surface-variant uppercase tracking-widest mb-6">
+              Trusted by engineering teams at
+            </p>
+            <div className="flex flex-wrap justify-center items-center gap-10 md:gap-16 grayscale opacity-50">
+              {[
+                { icon: "🚀", name: "VELOCITY" },
+                { icon: "☁️", name: "NEBULA"   },
+                { icon: "🛡️", name: "GUARDIAN" },
+                { icon: "🔗", name: "CORE"      },
+              ].map(({ icon, name }) => (
+                <div key={name} className="flex items-center gap-2 font-headline-sm font-bold text-on-surface">
+                  <span>{icon}</span>{name}
                 </div>
-                <span className="font-code-sm text-code-sm" style={{ color: "rgba(255,255,255,0.40)" }}>smart_sql_agent.sh</span>
-              </div>
-              <div className="p-xl font-code-md text-code-md space-y-lg">
-                <div className="flex gap-md flex-wrap">
-                  <span className="text-primary-fixed-dim">query:</span>
-                  <span className="text-on-primary-container">&quot;Show me monthly revenue by region for 2023&quot;</span>
-                </div>
-                <div className="h-px w-full" style={{ backgroundColor: "rgba(255,255,255,0.05)" }} />
-                <div className="space-y-xs">
-                  <div><span className="text-code-keyword">SELECT</span></div>
-                  <div className="pl-md">
-                    <span className="text-code-literal">DATE_TRUNC</span>(<span className="text-code-output">&apos;month&apos;</span>, order_date) <span className="text-code-keyword">AS</span> month,
-                  </div>
-                  <div className="pl-md">region,</div>
-                  <div className="pl-md">
-                    <span className="text-code-function">SUM</span>(revenue) <span className="text-code-keyword">AS</span> total_revenue
-                  </div>
-                  <div><span className="text-code-keyword">FROM</span> sales.orders</div>
-                  <div>
-                    <span className="text-code-keyword">WHERE</span> <span className="text-code-function">EXTRACT</span>(year <span className="text-code-keyword">FROM</span> order_date) = <span className="text-code-literal">2023</span>
-                  </div>
-                  <div><span className="text-code-keyword">GROUP BY</span> <span className="text-code-literal">1, 2</span></div>
-                  <div><span className="text-code-keyword">ORDER BY</span> <span className="text-code-literal">1, 2</span>;</div>
-                </div>
-                <div className="flex items-center gap-sm pt-md text-success">
-                  <CheckCircle size={16} />
-                  <span>Query validated and executed in 1.2s · 48 rows</span>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Features ── */}
-      <section id="features" className="py-3xl px-page-p bg-surface relative overflow-hidden">
-        <div className="vibrant-blob" style={{ backgroundColor: "rgba(217,223,245,0.30)", top: "50%", right: "-160px", transform: "translateY(-50%)" }} />
-        <div className="max-w-container-max-xl mx-auto relative z-10">
-          <div className="text-center mb-3xl">
-            <h2 className="text-headline-lg font-bold text-on-surface mb-md" style={{ fontFamily: "Inter,sans-serif" }}>
-              Analytics at the speed of thought
-            </h2>
-            <p className="text-body-lg text-on-surface-variant max-w-container-max-md mx-auto">
-              Skip the SQL drafting and go straight to the business decisions that matter most for your team.
+        {/* ── Features ── */}
+        <section id="features" className="max-w-6xl mx-auto px-6 mb-32">
+          <div className="text-center mb-12">
+            <h2 className="text-headline-lg font-bold text-on-surface mb-4">Built for Modern Data Stacks</h2>
+            <p className="text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+              Everything you need to manage your database workflow without the manual grind.
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-xl">
-            {FEATURES.map(({ icon: Icon, title, desc, hoverBg }) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {FEATURES.map(({ icon: Icon, title, desc }) => (
               <div key={title}
-                className="group p-xl rounded-xl border transition-all duration-300 hover:shadow-lg"
-                style={{ borderColor: "#e5e7eb", backgroundColor: "rgba(255,255,255,0.80)", backdropFilter: "blur(4px)" }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,74,198,0.30)")}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = "#e5e7eb")}>
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-lg transition-all duration-300 group-hover:scale-110"
-                  style={{ backgroundColor: "#dbe1ff" }}
-                  onMouseEnter={e => { e.currentTarget.style.backgroundColor = hoverBg; }}
-                  onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#dbe1ff"; }}>
+                className="group bg-white p-6 rounded-xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                style={{ borderColor: "rgba(195,198,214,0.50)" }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = "#004ac6")}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(195,198,214,0.50)")}>
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-5 transition-all duration-300 group-hover:bg-primary"
+                  style={{ background: "rgba(0,74,198,0.10)" }}>
                   <Icon size={22} className="text-primary transition-colors duration-300 group-hover:text-white" />
                 </div>
-                <h3 className="text-title-lg font-semibold text-on-surface mb-sm">{title}</h3>
+                <h3 className="text-title-lg font-semibold text-on-surface mb-2">{title}</h3>
                 <p className="text-body-md text-on-surface-variant">{desc}</p>
               </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── How it works ── */}
-      <section id="how-it-works" className="py-3xl px-page-p overflow-hidden relative"
-        style={{ backgroundColor: "#030712", color: "#ffffff" }}>
-        <div className="absolute top-0 right-0 w-full h-full opacity-20 pointer-events-none"
-          style={{ background: "radial-gradient(circle at right, #004ac6, #6a1edb, transparent)" }} />
+        {/* ── Asymmetric: From Idea to Query ── */}
+        <section id="how-it-works" className="max-w-6xl mx-auto px-6 mb-32 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+          {/* Left — dark code card */}
+          <div className="relative rounded-2xl overflow-hidden border shadow-2xl"
+            style={{ background: "#1e2433", borderColor: "rgba(195,198,214,0.20)" }}>
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b"
+              style={{ background: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.08)" }}>
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#ff5f56" }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#ffbd2e" }} />
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: "#27c93f" }} />
+              <span className="ml-2 font-mono text-xs" style={{ color: "rgba(255,255,255,0.30)" }}>analytics.sql</span>
+            </div>
+            <div className="p-6 font-mono text-sm space-y-1"
+              style={{ fontFamily: "'JetBrains Mono','Fira Code',monospace", color: "rgba(255,255,255,0.85)" }}>
+              {[
+                [<><span style={{color:"#818cf8"}}>SELECT</span></>],
+                [<>&nbsp;&nbsp;region_id,</>],
+                [<>&nbsp;&nbsp;<span style={{color:"#60a5fa"}}>SUM</span>(revenue) <span style={{color:"#818cf8"}}>AS</span> total_sales,</>],
+                [<>&nbsp;&nbsp;<span style={{color:"#60a5fa"}}>AVG</span>(attendance) <span style={{color:"#818cf8"}}>AS</span> avg_att</>],
+                [<><span style={{color:"#f472b6"}}>FROM</span> sales_data.fact_sales</>],
+                [<><span style={{color:"#f472b6"}}>WHERE</span> date &gt; <span style={{color:"#34d399"}}>&apos;2024-01-01&apos;</span></>],
+                [<><span style={{color:"#818cf8"}}>GROUP BY</span> region_id</>],
+                [<><span style={{color:"#818cf8"}}>ORDER BY</span> total_sales <span style={{color:"#818cf8"}}>DESC</span></>],
+                [<><span style={{color:"#818cf8"}}>LIMIT</span> 10;</>],
+              ].map((line, i) => (
+                <div key={i} className="flex gap-4">
+                  <span style={{ color: "rgba(255,255,255,0.20)", minWidth: "20px" }}>{i + 1}</span>
+                  <code>{line[0]}</code>
+                </div>
+              ))}
+              <div className="flex items-center gap-2 pt-4 text-xs" style={{ color: "#34d399" }}>
+                <CheckCircle size={13} />
+                <span>10 rows · 87ms · success</span>
+              </div>
+            </div>
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ background: "linear-gradient(to top, rgba(0,74,198,0.15), transparent)" }} />
+          </div>
 
-        <div className="max-w-container-max-xl mx-auto relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-xl mb-3xl">
-            <div className="max-w-container-max-sm">
-              <h2 className="text-display font-bold text-white mb-md" style={{ fontFamily: "Inter,sans-serif" }}>How it works</h2>
-              <p className="text-body-lg" style={{ color: "rgba(255,255,255,0.60)" }}>
-                Three simple steps to transition from data overload to actionable insights.
+          {/* Right — checklist */}
+          <div className="space-y-6">
+            <span className="text-primary font-label-md tracking-widest uppercase">The SmartSQL Difference</span>
+            <h2 className="text-headline-lg font-bold text-on-surface leading-tight">
+              From Idea to Query<br />in Milliseconds
+            </h2>
+            <div className="space-y-5">
+              {[
+                { title: "Universal Connectivity",  desc: "One-click connect for PostgreSQL, Supabase, MySQL, Snowflake, and BigQuery." },
+                { title: "Team Collaboration",      desc: "Share optimised query snippets and database documentation across your team." },
+                { title: "Enterprise Security",     desc: "Role-based access control with read-only enforcement — writes are blocked at the API layer." },
+              ].map(({ title, desc }) => (
+                <div key={title} className="flex gap-4">
+                  <CheckCircle size={22} className="text-primary shrink-0 mt-0.5" fill="#004ac6" stroke="white" strokeWidth={2} />
+                  <div>
+                    <p className="text-title-md font-semibold text-on-surface">{title}</p>
+                    <p className="text-body-md text-on-surface-variant mt-0.5">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA ── */}
+        <section id="demo" className="max-w-6xl mx-auto px-6 mb-32">
+          <div className="rounded-3xl p-10 md:p-16 text-center relative overflow-hidden"
+            style={{ background: "#1e2433" }}>
+            <div className="absolute inset-0 pointer-events-none"
+              style={{ background: "linear-gradient(135deg, rgba(0,74,198,0.20), rgba(105,29,218,0.20))" }} />
+            <div className="relative z-10">
+              <h2 className="font-bold text-white mb-4"
+                style={{ fontSize: "42px", lineHeight: 1.2, fontFamily: "Inter,sans-serif" }}>
+                Ready to Supercharge<br />Your Workflow?
+              </h2>
+              <p className="text-body-lg mb-8 max-w-xl mx-auto" style={{ color: "rgba(195,198,214,0.80)" }}>
+                Join 50,000+ developers who write faster, better SQL with SmartSQL.
+              </p>
+              <Link href="/register"
+                className="inline-flex items-center gap-2 bg-primary text-on-primary px-8 py-3.5 rounded-xl font-title-lg shadow-lg transition-all hover:-translate-y-0.5">
+                Get Started for Free
+                <ArrowRight size={18} />
+              </Link>
+              <p className="mt-4 text-label-md" style={{ color: "rgba(195,198,214,0.50)" }}>
+                No credit card required · 14-day free pro trial
               </p>
             </div>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-xl">
-            {STEPS.map(({ num, title, desc, color, hoverColor }) => (
-              <div key={num} className="relative group">
-                <div className="text-headline-lg font-bold mb-md opacity-60 transition-colors duration-300"
-                  style={{ color, fontFamily: "Inter,sans-serif" }}
-                  onMouseEnter={e => (e.currentTarget.style.color = hoverColor)}
-                  onMouseLeave={e => (e.currentTarget.style.color = color)}>
-                  {num}
-                </div>
-                <h4 className="text-title-lg font-semibold mb-sm text-white">{title}</h4>
-                <p className="text-body-md" style={{ color: "rgba(255,255,255,0.60)" }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Result preview */}
-          <div className="mt-3xl p-xl rounded-xl backdrop-blur-sm"
-            style={{ backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)" }}>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-xl">
-              <div className="space-y-sm">
-                <p className="text-label-md uppercase tracking-widest mb-md" style={{ color: "rgba(255,255,255,0.40)" }}>Query result</p>
-                {[
-                  ["Jan 2023", "$1,284,320"],
-                  ["Feb 2023", "$1,391,805"],
-                  ["Mar 2023", "$1,562,940"],
-                ].map(([month, value]) => (
-                  <div key={month} className="flex justify-between items-center py-sm border-b"
-                    style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-                    <span className="font-code-md text-code-md" style={{ color: "rgba(255,255,255,0.60)" }}>{month}</span>
-                    <span className="font-code-md text-code-md text-code-output font-semibold">{value}</span>
-                  </div>
-                ))}
-                <div className="flex items-center gap-xs text-success text-code-md pt-xs">
-                  <CheckCircle size={13} />
-                  <span>48 rows · 94ms · success</span>
-                </div>
-              </div>
-              <div className="flex items-center rounded-lg p-md"
-                style={{ backgroundColor: "rgba(0,74,198,0.10)", border: "1px solid rgba(0,74,198,0.20)" }}>
-                <p className="text-body-md italic" style={{ color: "rgba(255,255,255,0.70)" }}>
-                  ✦ Revenue grew consistently through Q1 2023, with March showing the strongest month
-                  (+12% vs January). The North region contributed 38% of total revenue across all periods.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Demo / CTA ── */}
-      <section id="demo" className="py-3xl px-page-p bg-surface-container-low relative overflow-hidden">
-        <div className="vibrant-blob" style={{ backgroundColor: "rgba(0,74,198,0.10)", bottom: "-160px", left: "-80px" }} />
-        <div className="max-w-container-max-md mx-auto text-center space-y-xl relative z-10">
-          <h2 className="text-display font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>
-            Ready to <span className="gradient-text">unlock</span> your data?
-          </h2>
-          <p className="text-body-lg text-on-surface-variant">
-            Use any of these demo accounts to explore SmartSQL right now — no sign-up required.
-          </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-md pt-md">
-            {DEMO_CREDS.map(({ role, email, password, badge, card }) => (
-              <div key={role} className={`rounded-xl border p-lg text-left ${card}`}>
-                <div className="mb-md">
-                  <span className={`text-label-md font-semibold px-sm py-xs rounded-full ${badge}`}>{role}</span>
-                </div>
-                <div className="space-y-sm font-code-md text-code-md">
-                  <div>
-                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant mb-xs">Email</p>
-                    <p className="text-on-surface font-semibold break-all">{email}</p>
-                  </div>
-                  <div>
-                    <p className="text-label-md uppercase tracking-widest text-on-surface-variant mb-xs">Password</p>
-                    <p className="text-on-surface font-semibold">{password}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-md pt-lg">
-            <Link href="/login"
-              className="bg-primary text-on-primary px-3xl py-md rounded-lg text-title-md font-semibold transition-all shadow-lg w-full sm:w-auto flex items-center justify-center gap-sm"
-              style={{ boxShadow: "0 10px 15px -3px rgba(0,74,198,0.25)", transition: "all 200ms" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#8343f4"; e.currentTarget.style.boxShadow = "0 25px 50px -12px rgba(131,67,244,0.40)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#004ac6"; e.currentTarget.style.boxShadow = "0 10px 15px -3px rgba(0,74,198,0.25)"; e.currentTarget.style.transform = ""; }}>
-              Start querying now
-              <ArrowRight size={18} />
-            </Link>
-            <Link href="/register"
-              className="bg-surface text-on-surface border px-3xl py-md rounded-lg text-title-md font-semibold transition-all w-full sm:w-auto"
-              style={{ borderColor: "#e5e7eb" }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "#f3f4f6"; e.currentTarget.style.borderColor = "rgba(0,74,198,0.40)"; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "#ffffff"; e.currentTarget.style.borderColor = "#e5e7eb"; }}>
-              Create account
-            </Link>
-          </div>
-
-          <div className="flex items-center justify-center gap-xl opacity-40 hover:opacity-100 grayscale hover:grayscale-0 transition-all duration-500 pt-xl">
-            {[1, 2, 3, 4, 5].map(i => <Star key={i} size={20} className="fill-current text-warning" />)}
-          </div>
-        </div>
-      </section>
+      </main>
 
       {/* ── Footer ── */}
-      <footer className="w-full py-xl bg-surface border-t" style={{ borderColor: "#e5e7eb" }}>
-        <div className="max-w-container-max-xl mx-auto px-page-p flex flex-col md:flex-row justify-between items-center gap-md">
-          <div className="flex items-center gap-base">
-            <Database size={18} className="text-primary" />
-            <span className="text-title-md font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>SmartSQL</span>
-            <span className="text-body-md text-on-secondary-container">© 2025 SmartSQL Analytics. All rights reserved.</span>
+      <footer className="w-full py-10" style={{ background: "#1e2433", color: "rgba(195,198,214,0.70)" }}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto px-6 pb-10">
+          {/* Brand */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#004ac6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+              </svg>
+              <span className="text-headline-sm font-extrabold text-white">SmartSQL</span>
+            </div>
+            <p className="text-body-md" style={{ color: "rgba(195,198,214,0.60)" }}>
+              Precision in every query. The definitive AI workspace for data professionals.
+            </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-lg">
-            {["Privacy Policy", "Terms of Service", "Security", "Contact Sales", "Status"].map(label => (
-              <Link key={label} href="/login"
-                className="text-label-md text-on-secondary-container hover:text-primary transition-colors">
-                {label}
-              </Link>
+
+          {/* Product */}
+          <div>
+            <h4 className="text-white font-title-md mb-4">Product</h4>
+            <ul className="space-y-3">
+              {["Features", "Security", "Integrations", "Pricing"].map(l => (
+                <li key={l}><a href="#" className="hover:text-white transition-colors">{l}</a></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h4 className="text-white font-title-md mb-4">Resources</h4>
+            <ul className="space-y-3">
+              {["Documentation", "API Reference", "Changelog", "Community"].map(l => (
+                <li key={l}><a href="#" className="hover:text-white transition-colors">{l}</a></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className="text-white font-title-md mb-4">Company</h4>
+            <ul className="space-y-3">
+              {["About Us", "Careers", "Privacy Policy", "Terms of Service"].map(l => (
+                <li key={l}><a href="#" className="hover:text-white transition-colors">{l}</a></li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="max-w-6xl mx-auto px-6 pt-8 border-t flex flex-col md:flex-row justify-between items-center gap-4"
+          style={{ borderColor: "rgba(255,255,255,0.10)" }}>
+          <p className="text-body-md" style={{ color: "rgba(195,198,214,0.50)" }}>
+            © 2025 SmartSQL AI. Precision in every query.
+          </p>
+          <div className="flex gap-6">
+            {["Privacy Policy", "Terms", "Contact"].map(l => (
+              <a key={l} href="#" className="text-label-md hover:text-white transition-colors">{l}</a>
             ))}
           </div>
         </div>
       </footer>
+
+      {/* Float keyframe */}
+      <style>{`
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(-12px); }
+        }
+      `}</style>
     </div>
   )
 }

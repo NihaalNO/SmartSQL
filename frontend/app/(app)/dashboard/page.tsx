@@ -2,9 +2,9 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Search, History, BookmarkCheck, Zap, TrendingUp, Clock, Shield, BarChart2, Eye } from "lucide-react"
-import { queryApi, schemaApi } from "@/lib/api"
+import { queryApi } from "@/lib/api"
 import { getUser, isAdmin, canSaveQueries, canUseLiveDb, getRole } from "@/lib/auth"
-import type { QueryLog, TableSchema } from "@/types"
+import type { QueryLog } from "@/types"
 
 // ---------------------------------------------------------------------------
 // Role badge
@@ -56,9 +56,8 @@ function StatCard({
 // ---------------------------------------------------------------------------
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)
-  const [logs, setLogs]       = useState<QueryLog[]>([])
-  const [saved, setSaved]     = useState<number>(0)
-  const [tables, setTables]   = useState<TableSchema[]>([])
+  const [logs, setLogs]   = useState<QueryLog[]>([])
+  const [saved, setSaved] = useState<number>(0)
 
   // Read auth state only after hydration — sessionStorage is unavailable on the server
   const user    = mounted ? getUser()        : null
@@ -75,7 +74,6 @@ export default function DashboardPage() {
     if (!mounted) return
     queryApi.history(10).then(setLogs).catch(() => {})
     if (canSave) queryApi.savedList().then((d) => setSaved(d.length)).catch(() => {})
-    if (canSave || admin) schemaApi.tables().then((d) => setTables(d.tables ?? [])).catch(() => {})
   }, [mounted]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const successCount = logs.filter((l) => l.execution_status === "success").length
@@ -109,9 +107,6 @@ export default function DashboardPage() {
         <StatCard label="Successful"     value={successCount}   icon={<Clock size={20} />}         href="/history" />
         {canSave && (
           <StatCard label="Saved Queries" value={saved}         icon={<BookmarkCheck size={20} />} href="/saved" />
-        )}
-        {(canSave || admin) && (
-          <StatCard label="DB Tables"     value={tables.length} icon={<Search size={20} />}        href="/query" />
         )}
       </div>
 
@@ -151,36 +146,8 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Schema explorer — admin + analyst only */}
-        {(canSave || admin) ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <h2 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-              <Search size={16} /> Schema Explorer
-            </h2>
-            {tables.length === 0 ? (
-              <p className="text-sm text-gray-400">Loading schema…</p>
-            ) : (
-              <ul className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                {tables.map((t) => (
-                  <li key={t.table} className="border border-gray-100 rounded-lg overflow-hidden">
-                    <div className="px-3 py-2 bg-gray-50 text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                      {t.table}
-                    </div>
-                    <div className="px-3 py-2 flex flex-wrap gap-x-4 gap-y-1">
-                      {t.columns.map((c) => (
-                        <span key={c.name} className="text-xs text-gray-500">
-                          <span className="font-medium text-gray-700">{c.name}</span>
-                          {" "}<span className="text-gray-400">{c.type}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        ) : (
-          /* Viewer: show a "what you can do" panel instead */
+        {/* Viewer panel */}
+        {!canSave && !admin && (
           <div className="bg-white rounded-xl border border-gray-200 p-5 flex flex-col justify-center items-center text-center gap-3">
             <Eye size={32} className="text-emerald-600 opacity-60" />
             <div>
