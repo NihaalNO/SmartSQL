@@ -16,11 +16,11 @@ class Settings(BaseSettings):
     # Direct PostgreSQL connection (Neon project connection details from
     # Neon Console → your project → Connection Details)
     # ------------------------------------------------------------------
-    DB_HOST: str = "ep-orange-union-aqpfyp3z-pooler.c-8.us-east-1.aws.neon.tech"
+    DB_HOST: str = ""
     DB_PORT: int = 5432
-    DB_NAME: str = "neondb"
-    DB_USER: str = "neondb_owner"
-    DB_PASSWORD: str = "npg_AcIgFLW6kS0y"
+    DB_NAME: str = ""
+    DB_USER: str = ""
+    DB_PASSWORD: str = ""
 
     # ------------------------------------------------------------------
     # AI Providers
