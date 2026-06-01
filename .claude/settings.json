@@ -1,0 +1,52 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"h:\\\\SmartSQL\" -Recurse -Depth 2)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(grep -E \"\\\\.\\(json|env|yml|yaml|md|txt\\)$\")",
+      "Bash(grep -E \"\\\\.\\(json|ts|tsx|js|jsx\\)$\")",
+      "Bash(Get-ChildItem -Path \"h:\\\\SmartSQL\\\\frontend\\\\app\\\\\" -Directory | Select-Object Name)",
+      "Bash(venv/Scripts/pip list *)",
+      "Bash(findstr -i \"supabase\\\\|fastapi\\\\|uvicorn\\\\|psycopg2\\\\|jose\\\\|sqlalchemy\")",
+      "Bash(venv/Scripts/python.exe -m pip list)",
+      "Bash(venv/Scripts/python.exe -m pip install -r requirements.txt)",
+      "Bash(npm --version)",
+      "Bash(venv/Scripts/python.exe -c \"import fastapi, supabase, sqlalchemy, psycopg2; print\\('all OK'\\)\")",
+      "Bash(venv/Scripts/python.exe -c \"import fastapi, supabase, sqlalchemy, psycopg2, jose; print\\('all packages OK'\\)\")",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(cat C:/Temp/backend.log 2>/dev/null || echo \"no log yet\")",
+      "Read(//c/Temp/**)",
+      "Bash(mkdir -p C:/Temp)",
+      "Bash(venv/Scripts/uvicorn.exe main:app --host 0.0.0.0 --port 8000)",
+      "Bash(echo \"started: $!\")",
+      "Bash(curl -s -X POST http://localhost:8000/api/auth/register -H 'Content-Type: application/json' -H 'Origin: http://localhost:3000' -d '{\"full_name\":\"Nihaal\",\"email\":\"odathernihaal@gmail.com\",\"password\":\"Nihaal@123\",\"role\":\"admin\"}')",
+      "Bash(venv/Scripts/python.exe -c ' *)",
+      "Bash(curl -s --max-time 5 \"https://rznlcsgipyzpftvwbuyu.supabase.co/rest/v1/\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ6bmxjc2dpcHl6cGZ0dndidXl1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwNTg2MjcsImV4cCI6MjA5NTYzNDYyN30.BpJM951qbTkYgSbry6sPna-N8dKUk3yx1r6TR1Fw6qA\")",
+      "Bash(nslookup db.rznlcsgipyzpftvwbuyu.supabase.co)",
+      "Bash(nslookup rznlcsgipyzpftvwbuyu.supabase.co)",
+      "Bash(xargs -r taskkill /F /PID)",
+      "Bash(taskkill /F /IM uvicorn.exe /T)",
+      "Bash(taskkill /F /IM node.exe /T)",
+      "Bash(curl -si -X OPTIONS http://localhost:8000/api/auth/login -H 'Origin: http://localhost:3000' -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: Authorization,Content-Type')",
+      "Bash(curl -si -X POST http://localhost:8000/api/auth/login -H 'Origin: http://localhost:3000' -H 'Content-Type: application/json' -d '{\"email\":\"odathernihaal@gmail.com\",\"password\":\"Nihaal@123\"}')",
+      "Bash(curl -si -X OPTIONS http://localhost:8000/api/auth/login -H 'Origin: http://localhost:3000' -H 'Access-Control-Request-Method: POST')",
+      "Bash(curl -s -X POST http://localhost:8000/api/auth/login -H 'Origin: http://localhost:3000' -H 'Content-Type: application/json' -d '{\"email\":\"odathernihaal@gmail.com\",\"password\":\"Nihaal@123\"}')",
+      "Bash(curl -s -X POST http://localhost:8000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"odathernihaal@gmail.com\",\"password\":\"Nihaal@123\"}')",
+      "Bash(curl -s -o /dev/null -w \"Frontend: %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(python -c \"import playwright\")",
+      "Bash(python -m playwright install chromium --quiet)",
+      "Bash(python -m playwright install chromium)",
+      "Bash(python -c \"from playwright.sync_api import sync_playwright; print\\('playwright ready'\\)\")",
+      "Bash(python -)",
+      "Bash(curl -s http://localhost:8000/api/auth/me -H 'Authorization: Bearer __TRACKED_VAR__')",
+      "Bash(curl -s http://localhost:8000/api/queries/run -X POST -H \"Content-Type: application/json\" -d '{\"question\":\"test\"}')",
+      "Bash(python -c \"from app.config import get_settings; s = get_settings\\(\\); print\\('Provider:', s.DEFAULT_MODEL_PROVIDER\\); print\\('Model:', s.DEFAULT_MODEL_NAME\\); print\\('Groq key:', s.GROQ_API_KEY[:10] + '...' if s.GROQ_API_KEY else 'MISSING'\\)\")",
+      "Read(//c/Users/odath/AppData/Roaming/Python/Python313/site-packages/uvicorn/**)",
+      "Bash(git commit -m ' *)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\odath\\AppData\\Roaming\\Python\\Python313\\site-packages\\uvicorn"
+    ]
+  }
+}
