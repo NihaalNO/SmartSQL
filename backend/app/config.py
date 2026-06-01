@@ -4,34 +4,44 @@ from urllib.parse import quote_plus
 
 
 class Settings(BaseSettings):
-    # Database
-    MYSQL_HOST: str = "localhost"
-    MYSQL_PORT: int = 3306
-    MYSQL_USER: str = "root"
-    MYSQL_PASSWORD: str = ""
-    MYSQL_DB: str = "text_to_sql_portal"
+    # ------------------------------------------------------------------
+    # Supabase project credentials
+    # ------------------------------------------------------------------
+    SUPABASE_URL: str = ""                  # https://<ref>.supabase.co
+    SUPABASE_ANON_KEY: str = ""             # public anon key
+    SUPABASE_SERVICE_ROLE_KEY: str = ""     # secret service-role key (backend only)
+    SUPABASE_JWT_SECRET: str = ""           # Project Settings > API > JWT Secret
 
-    # JWT
-    SECRET_KEY: str = "dev-secret-change-in-production"
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    # ------------------------------------------------------------------
+    # Direct PostgreSQL connection (Neon project connection details from
+    # Neon Console → your project → Connection Details)
+    # ------------------------------------------------------------------
+    DB_HOST: str = "ep-orange-union-aqpfyp3z-pooler.c-8.us-east-1.aws.neon.tech"
+    DB_PORT: int = 5432
+    DB_NAME: str = "neondb"
+    DB_USER: str = "neondb_owner"
+    DB_PASSWORD: str = "npg_AcIgFLW6kS0y"
 
+    # ------------------------------------------------------------------
     # AI Providers
+    # ------------------------------------------------------------------
     GROQ_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
     OLLAMA_URL: str = "http://localhost:11434"
     DEFAULT_MODEL_PROVIDER: str = "groq"
     DEFAULT_MODEL_NAME: str = "llama-3.3-70b-versatile"
 
+    # ------------------------------------------------------------------
     # CORS
+    # ------------------------------------------------------------------
     FRONTEND_URL: str = "http://localhost:3000"
 
     @property
     def database_url(self) -> str:
-        password = quote_plus(self.MYSQL_PASSWORD)
+        password = quote_plus(self.DB_PASSWORD)
         return (
-            f"mysql+pymysql://{self.MYSQL_USER}:{password}"
-            f"@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DB}"
+            f"postgresql+psycopg2://{self.DB_USER}:{password}"
+            f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
     class Config:

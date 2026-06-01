@@ -13,7 +13,7 @@ class QueryRequest(BaseModel):
 
 class LiveQueryRequest(BaseModel):
     question: str
-    # Ephemeral Supabase credentials (never stored persistently)
+    # Ephemeral credentials — never stored persistently
     db_host: str
     db_port: int = 5432
     db_name: str
@@ -21,6 +21,15 @@ class LiveQueryRequest(BaseModel):
     db_password: str
     model_provider: Optional[str] = None
     model_name: Optional[str] = None
+    include_insight: bool = True
+    ssl_required: bool = True   # set False for local/non-SSL PostgreSQL
+
+
+class QueryIntent(BaseModel):
+    query_type: str = "SQL"
+    table: Optional[str] = None
+    action: str = "select"
+    attributes: List[str] = []
 
 
 class QueryResult(BaseModel):
@@ -33,7 +42,8 @@ class QueryResult(BaseModel):
     log_id: Optional[int] = None
     insight: Optional[str] = None
     error: Optional[str] = None
-    status: str = "success"
+    status: str = "success"   # success | failed | blocked | need_context
+    intent: Optional[QueryIntent] = None
 
 
 class SaveQueryRequest(BaseModel):

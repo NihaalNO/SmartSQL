@@ -1,3 +1,10 @@
+export interface QueryIntent {
+  query_type: string
+  table: string | null
+  action: string
+  attributes: string[]
+}
+
 export interface QueryResult {
   natural_language_query: string
   generated_sql: string
@@ -8,7 +15,8 @@ export interface QueryResult {
   log_id?: number
   insight?: string
   error?: string
-  status: "success" | "failed" | "blocked"
+  status: "success" | "failed" | "blocked" | "need_context" | "template"
+  intent?: QueryIntent
 }
 
 export interface SavedQuery {

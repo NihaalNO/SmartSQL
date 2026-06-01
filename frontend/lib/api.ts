@@ -53,6 +53,9 @@ export const queryApi = {
     db_user: string
     db_password: string
     model_provider?: string
+    model_name?: string
+    ssl_required?: boolean
+    include_insight?: boolean
   }) => api.post("/api/queries/run-live", payload).then((r) => r.data),
 
   save: (payload: { log_id: number; title: string; chart_type?: string; is_favorite?: boolean }) =>

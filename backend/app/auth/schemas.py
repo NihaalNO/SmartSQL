@@ -7,7 +7,7 @@ class RegisterRequest(BaseModel):
     full_name: str
     email: EmailStr
     password: str
-    role: str = "analyst"
+    role: str = "viewer"
 
 
 class LoginRequest(BaseModel):
@@ -18,7 +18,7 @@ class LoginRequest(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
-    user_id: int
+    user_id: int          # app-level integer PK
     full_name: str
     email: str
     role: str

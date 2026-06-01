@@ -9,9 +9,11 @@ BLOCKED_PATTERNS = re.compile(
     re.IGNORECASE,
 )
 
-# Allow only SELECT and SHOW/DESCRIBE
+# Allow only read-only PostgreSQL-compatible statements.
+# SHOW / DESCRIBE / DESC are MySQL-only and not valid PostgreSQL syntax,
+# so they are intentionally excluded here.
 ALLOWED_PREFIXES = re.compile(
-    r"^\s*(SELECT|SHOW|DESCRIBE|DESC|WITH\s+\w+\s+AS)\b",
+    r"^\s*(SELECT|WITH\b)",   # WITH covers CTEs: WITH x AS, WITH RECURSIVE x AS
     re.IGNORECASE,
 )
 
@@ -26,7 +28,7 @@ DANGEROUS_FUNCTIONS = re.compile(
 def validate_sql(sql: str) -> Tuple[bool, str]:
     """
     Returns (is_safe, reason).
-    A query is safe only if it's a read-only SELECT/SHOW/DESCRIBE
+    A query is safe only if it is a read-only SELECT / CTE (WITH) statement
     and contains no dangerous patterns.
     """
     sql = sql.strip()
@@ -34,7 +36,7 @@ def validate_sql(sql: str) -> Tuple[bool, str]:
     if not sql:
         return False, "Empty query"
 
-    # Strip trailing semicolons for multi-statement detection
+    # Detect multi-statement injection (semicolon-separated)
     statements = [s.strip() for s in sql.split(";") if s.strip()]
     if len(statements) > 1:
         return False, "Multiple statements are not allowed"
@@ -43,7 +45,7 @@ def validate_sql(sql: str) -> Tuple[bool, str]:
         return False, "Write operations (INSERT, UPDATE, DELETE, etc.) are not allowed"
 
     if not ALLOWED_PREFIXES.match(sql):
-        return False, "Only SELECT, SHOW, and DESCRIBE statements are permitted"
+        return False, "Only SELECT and CTE (WITH …) statements are permitted"
 
     if DANGEROUS_FUNCTIONS.search(sql):
         return False, "Query contains a disallowed function"
