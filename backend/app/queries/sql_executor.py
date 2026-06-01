@@ -113,7 +113,6 @@ def execute_sql_on_external(
     try:
         engine = create_engine(
             connection_string,
-            pool_pre_ping=True,
             connect_args={"connect_timeout": 10, "sslmode": sslmode},
         )
         with engine.connect() as conn:

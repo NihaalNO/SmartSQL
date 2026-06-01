@@ -42,15 +42,17 @@ def get_external_schema(connection_string: str, ssl_required: bool = True) -> st
     try:
         engine = create_engine(
             connection_string,
-            pool_pre_ping=True,
             connect_args={"connect_timeout": 10, "sslmode": sslmode},
         )
-        inspector = inspect(engine)
         parts = []
-        for table_name in inspector.get_table_names(schema="public"):
-            cols = inspector.get_columns(table_name, schema="public")
-            col_defs = [f"  {c['name']} {c['type']}" for c in cols]
-            parts.append(f"Table: {table_name}\nColumns:\n" + "\n".join(col_defs))
+        # Use a single connection for all reflection calls to avoid the overhead
+        # of opening a new connection per method when using inspect(engine).
+        with engine.connect() as conn:
+            inspector = inspect(conn)
+            for table_name in inspector.get_table_names(schema="public"):
+                cols = inspector.get_columns(table_name, schema="public")
+                col_defs = [f"  {c['name']} {c['type']}" for c in cols]
+                parts.append(f"Table: {table_name}\nColumns:\n" + "\n".join(col_defs))
         return "\n\n".join(parts)
     except Exception as exc:
         msg = str(exc)

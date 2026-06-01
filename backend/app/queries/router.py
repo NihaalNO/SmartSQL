@@ -1,5 +1,5 @@
 import json
-from urllib.parse import quote_plus
+from urllib.parse import quote
 from fastapi import APIRouter, Depends, HTTPException
 
 from app.auth.utils import CurrentUser, get_current_user, require_role
@@ -155,10 +155,12 @@ def run_live_query(
 ):
     sb = get_supabase()
 
-    # URL-encode user + password so special chars (@, :, #, +, etc.) don't break the URI
+    # URL-encode user, password, and db_name so special chars don't break the URI.
+    # Use quote() with safe='' (not quote_plus) because SQLAlchemy decodes with
+    # urllib.parse.unquote, which does NOT convert '+' back to space.
     conn_str = (
-        f"postgresql+psycopg2://{quote_plus(payload.db_user)}:{quote_plus(payload.db_password)}"
-        f"@{payload.db_host}:{payload.db_port}/{payload.db_name}"
+        f"postgresql+psycopg2://{quote(payload.db_user, safe='')}:{quote(payload.db_password, safe='')}"
+        f"@{payload.db_host}:{payload.db_port}/{quote(payload.db_name, safe='')}"
     )
 
     schema_text = get_external_schema(conn_str, ssl_required=payload.ssl_required)
