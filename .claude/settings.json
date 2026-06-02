@@ -48,7 +48,10 @@
       "Bash(curl -L \"https://lh3.googleusercontent.com/aida/AP1WRLvoaVrg88i482Nm2KvvbJpmVBikJDf29uiXUgkp_NkuLogApFV2PZ02M1_kmVwgkcVtoH_zC3HoNkLewpsjKRP_06BcMzuzRIHSOTFhLId0ew4GegGeP6mpNMjCsmdYzZ3OlGqHxmlWfK51pZtd9L7KRNeRszpCvQBJGXrGuORrnIVGQu_N0rANtOWAu3dLZA69_1L4AOUd0_5h_eoYARlFvCgmIqqcHKz39fIJslkX2RHqN2DEJZkDXQ\" -o \"d:/SmartSQL/stitch_sql_query_editor.png\" --silent)",
       "Bash(curl -L \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ7Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpaCiVodG1sX2YxNWM4NmU5ZDU0YjRjZDU4ZDEyNmI0ZGMyYzU2NTgzEgsSBxC03v-4zwkYAZIBIwoKcHJvamVjdF9pZBIVQhMyNzMzNTYzMDA3NTgwMDU0Njg4&filename=&opi=89354086\" -o \"d:/SmartSQL/stitch_sql_query_editor.html\" --silent)",
       "Bash(curl -L \"https://lh3.googleusercontent.com/aida/AP1WRLvyCgN1G6mO4WzLFk63ACBnqj3Da6nKn2k0t0jr1bE4IMeJ1vIkcocJVOLDMnNg5_8UHNrqlJPhhmpbdIDcZuXny4CguiwhyKn6MuHQ8a-naCsIRyEKO_OXadcAH0-UZB1DqXXnqoaMr_i0PMt5YhQT2FxJ70AV-6OZw49Jn3iXMiPjCCpYOBdjbQ-cGp5jCHGaxIAFNTwfQhnZMLpeGLyJICy4l5ZWAITanjU2pO6cPfxUUCNqlUP9nJo\" -o \"d:/SmartSQL/stitch_landing_page.png\" --silent)",
-      "Bash(curl -L \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzQxNGYxYzM5OWMxOTRhMzU4MTdkNjQzZWFmZjlhMzAwEgsSBxC03v-4zwkYAZIBJAoKcHJvamVjdF9pZBIWQhQxMDAxMTk1NjA4MzY1MzE0MjQ4MQ&filename=&opi=89354086\" -o \"d:/SmartSQL/stitch_landing_page.html\" --silent)"
+      "Bash(curl -L \"https://contribution.usercontent.google.com/download?c=CgthaWRhX2NvZGVmeBJ8Eh1hcHBfY29tcGFuaW9uX2dlbmVyYXRlZF9maWxlcxpbCiVodG1sXzQxNGYxYzM5OWMxOTRhMzU4MTdkNjQzZWFmZjlhMzAwEgsSBxC03v-4zwkYAZIBJAoKcHJvamVjdF9pZBIWQhQxMDAxMTk1NjA4MzY1MzE0MjQ4MQ&filename=&opi=89354086\" -o \"d:/SmartSQL/stitch_landing_page.html\" --silent)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__execute_sql"
     ],
     "additionalDirectories": [
       "C:\\Users\\odath\\AppData\\Roaming\\Python\\Python313\\site-packages\\uvicorn"
