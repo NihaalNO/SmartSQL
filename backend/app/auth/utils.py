@@ -1,17 +1,77 @@
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
+import bcrypt as _bcrypt
+from jose import JWTError, jwt
 
-from app.supabase_client import get_supabase, get_auth_client
+from app.config import get_settings
+from app.supabase_client import get_supabase
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
+settings = get_settings()
 
 # ---------------------------------------------------------------------------
-# Lightweight user object returned by get_current_user.
-# Mirrors the attributes used by all route handlers so no route code changes.
+# Admin code hashing — uses bcrypt directly (passlib has Python 3.13 issues)
+# ---------------------------------------------------------------------------
+
+def hash_admin_code(code: str) -> str:
+    return _bcrypt.hashpw(code.encode(), _bcrypt.gensalt(12)).decode()
+
+
+def verify_admin_code(plain: str, hashed: str) -> bool:
+    try:
+        return _bcrypt.checkpw(plain.encode(), hashed.encode())
+    except Exception:
+        return False
+
+
+# ---------------------------------------------------------------------------
+# JWT helpers
+# ---------------------------------------------------------------------------
+
+ALGORITHM = "HS256"
+ADMIN_TOKEN_EXPIRE_HOURS = 8
+
+
+def create_admin_token(supabase_uid: str) -> str:
+    """Issue a custom JWT for an admin. Signed with SUPABASE_JWT_SECRET."""
+    now = datetime.now(timezone.utc)
+    claims = {
+        "sub":      supabase_uid,
+        "role":     "authenticated",
+        "is_admin": True,
+        "iat":      now,
+        "exp":      now + timedelta(hours=ADMIN_TOKEN_EXPIRE_HOURS),
+    }
+    return jwt.encode(claims, settings.SUPABASE_JWT_SECRET, algorithm=ALGORITHM)
+
+
+def decode_token(token: str) -> dict:
+    """
+    Verify and decode any bearer token — both Supabase-issued session tokens
+    and custom admin JWTs share the same HS256 / SUPABASE_JWT_SECRET signing key.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SUPABASE_JWT_SECRET,
+            algorithms=[ALGORITHM],
+            options={"verify_aud": False},
+        )
+        return payload
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+        )
+
+
+# ---------------------------------------------------------------------------
+# User dataclass
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -31,36 +91,13 @@ class CurrentUser:
 
 
 # ---------------------------------------------------------------------------
-# Token helpers
-# ---------------------------------------------------------------------------
-
-def verify_supabase_token(token: str) -> str:
-    """
-    Validate the bearer token against Supabase Auth and return the user's UUID.
-    Uses a fresh anon client so the cached service-role client's auth state
-    is never contaminated by this call.  Handles ES256, HS256, and any
-    future algorithm transparently — no local JWT secret needed.
-    """
-    try:
-        auth_client = get_auth_client()   # fresh instance per call, anon key
-        resp = auth_client.auth.get_user(token)
-        if not resp or not resp.user:
-            raise ValueError("no user in response")
-        return str(resp.user.id)
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-        )
-
-
-# ---------------------------------------------------------------------------
 # FastAPI dependencies
 # ---------------------------------------------------------------------------
 
 def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
-    """Resolve the current user via the Supabase Auth + REST APIs."""
-    supabase_uid = verify_supabase_token(token)
+    payload = decode_token(token)
+
+    supabase_uid = payload.get("sub")
     if not supabase_uid:
         raise HTTPException(status_code=401, detail="Invalid token payload")
 
@@ -82,7 +119,6 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> CurrentUser:
     if data["status"] != "active":
         raise HTTPException(status_code=401, detail="Account is inactive")
 
-    # Fetch role name separately — avoids flaky PostgREST embedded join
     role_res = sb.table("roles").select("name").eq("id", data["role_id"]).execute()
     role_name = role_res.data[0]["name"] if role_res.data else "viewer"
 

@@ -41,7 +41,7 @@ export function hasRole(...roles: string[]): boolean {
   return roles.includes(getRole())
 }
 
-// Convenience shorthands
-export const canSaveQueries = () => hasRole("admin", "analyst")
-export const canUseLiveDb   = () => hasRole("admin", "analyst")
+// Convenience shorthands — admin has its own panel, not the main app
+export const canSaveQueries = () => hasRole("analyst")
+export const canUseLiveDb   = () => hasRole("analyst")
 export const isAdmin        = () => hasRole("admin")

@@ -15,7 +15,7 @@ import { isLoggedIn, isAdmin } from "@/lib/auth"
 function useAuthRedirect() {
   const router = useRouter()
   useEffect(() => {
-    if (isLoggedIn()) router.replace(isAdmin() ? "/dashboard" : "/query")
+    if (isLoggedIn()) router.replace(isAdmin() ? "/moderator/dashboard" : "/query")
   }, [router])
 }
 

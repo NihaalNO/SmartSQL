@@ -14,11 +14,11 @@ import { logout, getUser } from "@/lib/auth"
 // ---------------------------------------------------------------------------
 
 const ALL_NAV = [
-  { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard, roles: ["admin", "analyst", "viewer"] },
-  { href: "/query",     label: "Query",         icon: Search,          roles: ["admin", "analyst", "viewer"] },
-  { href: "/history",   label: "History",       icon: History,         roles: ["admin", "analyst", "viewer"] },
-  { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck,   roles: ["admin", "analyst"] },
-  { href: "/live-db",   label: "Live DB Mode",  icon: Zap,             roles: ["admin", "analyst"] },
+  { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard, roles: ["analyst", "viewer"] },
+  { href: "/query",     label: "Query",         icon: Search,          roles: ["analyst", "viewer"] },
+  { href: "/history",   label: "History",       icon: History,         roles: ["analyst", "viewer"] },
+  { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck,   roles: ["analyst"] },
+  { href: "/live-db",   label: "Live DB Mode",  icon: Zap,             roles: ["analyst"] },
 ] as const
 
 const ROLE_META: Record<string, { label: string; bg: string; color: string; border: string }> = {

@@ -3,7 +3,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
-import { Database, User, Mail, Lock, Shield, BarChart2, Eye, CheckCircle2 } from "lucide-react"
+import { Database, User, Mail, Lock, BarChart2, Eye, CheckCircle2 } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { saveAuth } from "@/lib/auth"
 import Link from "next/link"
@@ -11,7 +11,7 @@ import Link from "next/link"
 // ---------------------------------------------------------------------------
 // Role definitions
 // ---------------------------------------------------------------------------
-type RoleId = "admin" | "analyst" | "viewer"
+type RoleId = "analyst" | "viewer"
 
 const ROLES: {
   id: RoleId
@@ -25,18 +25,6 @@ const ROLES: {
   accentBorder: string
   gradient: string
 }[] = [
-  {
-    id: "admin",
-    label: "Admin",
-    icon: Shield,
-    tagline: "Platform Manager",
-    description: "Complete control over the platform",
-    perks: ["Manage all users & roles", "Access full analytics dashboard", "Configure data sources", "All analyst capabilities"],
-    accent: "#b91c1c",
-    accentBg: "rgba(185,28,28,0.07)",
-    accentBorder: "rgba(185,28,28,0.28)",
-    gradient: "linear-gradient(135deg,#b91c1c 0%,#7f1d1d 100%)",
-  },
   {
     id: "analyst",
     label: "Analyst",

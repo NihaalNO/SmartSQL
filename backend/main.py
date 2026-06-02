@@ -6,6 +6,7 @@ from app.config import get_settings
 from app.auth.router import router as auth_router
 from app.queries.router import router as queries_router
 from app.schema_service.router import router as schema_router
+from app.admin.router import router as admin_router
 
 settings = get_settings()
 
@@ -74,6 +75,7 @@ async def unhandled_error(request: Request, exc: Exception):
 app.include_router(auth_router)
 app.include_router(queries_router)
 app.include_router(schema_router)
+app.include_router(admin_router)
 
 
 @app.get("/health")

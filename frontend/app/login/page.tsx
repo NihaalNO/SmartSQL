@@ -1,17 +1,16 @@
 "use client"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
-import { Database, Mail, Lock, Shield, BarChart2, Eye } from "lucide-react"
+import { Database, Mail, Lock, BarChart2, Eye } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { saveAuth } from "@/lib/auth"
 import Link from "next/link"
 
 // ---------------------------------------------------------------------------
-// Role definitions
+// Role definitions — analyst and viewer only
 // ---------------------------------------------------------------------------
-type RoleId = "admin" | "analyst" | "viewer"
+type RoleId = "analyst" | "viewer"
 
 const ROLES: {
   id: RoleId
@@ -24,17 +23,6 @@ const ROLES: {
   accentBorder: string
   gradient: string
 }[] = [
-  {
-    id: "admin",
-    label: "Admin",
-    icon: Shield,
-    tagline: "Platform Manager",
-    description: "Full access — manage users, all analytics, data sources & dashboards",
-    accent: "#b91c1c",
-    accentBg: "rgba(185,28,28,0.07)",
-    accentBorder: "rgba(185,28,28,0.30)",
-    gradient: "linear-gradient(135deg,#b91c1c 0%,#7f1d1d 100%)",
-  },
   {
     id: "analyst",
     label: "Analyst",
@@ -59,32 +47,25 @@ const ROLES: {
   },
 ]
 
-function getRedirectPath(_role: string) {
-  return "/dashboard"
-}
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
-interface LoginForm {
-  email: string
-  password: string
-}
-
 export default function LoginPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
+  const [loading,      setLoading]      = useState(false)
   const [selectedRole, setSelectedRole] = useState<RoleId>("analyst")
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>()
+  const [email,        setEmail]        = useState("")
+  const [password,     setPassword]     = useState("")
 
   const active = ROLES.find(r => r.id === selectedRole)!
 
-  const onSubmit = async (data: LoginForm) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setLoading(true)
     try {
-      const res = await authApi.login(data.email, data.password)
+      const res = await authApi.login(email.trim(), password)
       saveAuth(res)
-      router.push(getRedirectPath(res.role))
+      router.push("/dashboard")
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
@@ -94,6 +75,8 @@ export default function LoginPage() {
       setLoading(false)
     }
   }
+
+  const inputClass = "w-full pl-10 pr-4 py-2.5 bg-surface border rounded-lg text-sm outline-none transition-all"
 
   return (
     <div
@@ -142,10 +125,10 @@ export default function LoginPage() {
             <p className="text-sm text-on-surface-variant">Choose your role, then sign in to continue</p>
           </div>
 
-          {/* ── Role selector cards ─────────────────────────────────────── */}
-          <div className="w-full grid grid-cols-3 gap-3 mb-6">
+          {/* Role selector — 2 cards */}
+          <div className="w-full grid grid-cols-2 gap-3 mb-6">
             {ROLES.map(role => {
-              const Icon = role.icon
+              const Icon     = role.icon
               const isActive = selectedRole === role.id
               return (
                 <button
@@ -155,43 +138,24 @@ export default function LoginPage() {
                   className="relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all duration-200 text-center focus:outline-none"
                   style={{
                     backgroundColor: isActive ? role.accentBg : "#fff",
-                    borderColor: isActive ? role.accent : "#e5e7eb",
-                    boxShadow: isActive ? `0 0 0 3px ${role.accentBg}, 0 4px 12px ${role.accentBg}` : "none",
-                    transform: isActive ? "translateY(-2px)" : "none",
+                    borderColor:     isActive ? role.accent    : "#e5e7eb",
+                    boxShadow:       isActive ? `0 0 0 3px ${role.accentBg}, 0 4px 12px ${role.accentBg}` : "none",
+                    transform:       isActive ? "translateY(-2px)" : "none",
                   }}
                 >
-                  {/* Active indicator dot */}
                   {isActive && (
-                    <span
-                      className="absolute top-2 right-2 w-2 h-2 rounded-full"
-                      style={{ backgroundColor: role.accent }}
-                    />
+                    <span className="absolute top-2 right-2 w-2 h-2 rounded-full" style={{ backgroundColor: role.accent }} />
                   )}
-
-                  {/* Icon container */}
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center"
-                    style={{
-                      background: isActive ? role.gradient : "rgba(107,114,128,0.10)",
-                    }}
-                  >
-                    <Icon
-                      size={18}
-                      style={{ color: isActive ? "#fff" : "#6b7280" }}
-                    />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center"
+                    style={{ background: isActive ? role.gradient : "rgba(107,114,128,0.10)" }}>
+                    <Icon size={18} style={{ color: isActive ? "#fff" : "#6b7280" }} />
                   </div>
-
                   <div>
-                    <p
-                      className="text-sm font-bold leading-tight"
-                      style={{ color: isActive ? role.accent : "#374151" }}
-                    >
+                    <p className="text-sm font-bold leading-tight" style={{ color: isActive ? role.accent : "#374151" }}>
                       {role.label}
                     </p>
-                    <p
-                      className="text-xs leading-tight mt-0.5"
-                      style={{ color: isActive ? role.accent : "#9ca3af", opacity: isActive ? 0.8 : 1 }}
-                    >
+                    <p className="text-xs leading-tight mt-0.5"
+                      style={{ color: isActive ? role.accent : "#9ca3af", opacity: isActive ? 0.8 : 1 }}>
                       {role.tagline}
                     </p>
                   </div>
@@ -200,27 +164,21 @@ export default function LoginPage() {
             })}
           </div>
 
-          {/* Role description hint */}
+          {/* Role hint */}
           <div
             className="w-full mb-6 px-4 py-3 rounded-lg text-xs flex items-start gap-2 transition-all duration-300"
-            style={{
-              backgroundColor: active.accentBg,
-              border: `1px solid ${active.accentBorder}`,
-              color: active.accent,
-            }}
+            style={{ backgroundColor: active.accentBg, border: `1px solid ${active.accentBorder}`, color: active.accent }}
           >
             <active.icon size={14} className="mt-0.5 flex-shrink-0" />
             <span>{active.description}</span>
           </div>
 
-          {/* ── Login card ──────────────────────────────────────────────── */}
+          {/* Login card */}
           <div className="w-full bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
-
-            {/* Card accent header strip */}
             <div className="h-1.5 w-full" style={{ background: active.gradient }} />
 
             <div className="p-8">
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
 
                 {/* Email */}
                 <div className="space-y-1.5">
@@ -230,31 +188,21 @@ export default function LoginPage() {
                   <div className="relative">
                     <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                     <input
-                      {...register("email", { required: "Email is required" })}
-                      id="email"
-                      type="email"
+                      id="email" type="email" required
                       placeholder="name@company.com"
-                      className="w-full pl-10 pr-4 py-2.5 bg-surface border rounded-lg text-sm outline-none transition-all"
+                      value={email} onChange={e => setEmail(e.target.value)}
+                      className={inputClass}
                       style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => {
-                        e.currentTarget.style.borderColor = active.accent
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}`
-                      }}
-                      onBlur={e => {
-                        e.currentTarget.style.borderColor = "#e5e7eb"
-                        e.currentTarget.style.boxShadow = ""
-                      }}
+                      onFocus={e => { e.currentTarget.style.borderColor = active.accent; e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}` }}
+                      onBlur={e  => { e.currentTarget.style.borderColor = "#e5e7eb";    e.currentTarget.style.boxShadow = "" }}
                     />
                   </div>
-                  {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
                 </div>
 
                 {/* Password */}
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-sm font-medium text-on-surface" htmlFor="password">
-                      Password
-                    </label>
+                    <label className="text-sm font-medium text-on-surface" htmlFor="password">Password</label>
                     <Link href="#" className="text-xs hover:underline underline-offset-4" style={{ color: active.accent }}>
                       Forgot password?
                     </Link>
@@ -262,41 +210,25 @@ export default function LoginPage() {
                   <div className="relative">
                     <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
                     <input
-                      {...register("password", { required: "Password is required" })}
-                      id="password"
-                      type="password"
+                      id="password" type="password" required
                       placeholder="••••••••"
-                      className="w-full pl-10 pr-4 py-2.5 bg-surface border rounded-lg text-sm outline-none transition-all"
+                      value={password} onChange={e => setPassword(e.target.value)}
+                      className={inputClass}
                       style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => {
-                        e.currentTarget.style.borderColor = active.accent
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}`
-                      }}
-                      onBlur={e => {
-                        e.currentTarget.style.borderColor = "#e5e7eb"
-                        e.currentTarget.style.boxShadow = ""
-                      }}
+                      onFocus={e => { e.currentTarget.style.borderColor = active.accent; e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}` }}
+                      onBlur={e  => { e.currentTarget.style.borderColor = "#e5e7eb";    e.currentTarget.style.boxShadow = "" }}
                     />
                   </div>
-                  {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
                 </div>
 
-                {/* CTA */}
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={loading}
                   className="w-full py-2.5 rounded-lg text-sm font-semibold text-white shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ background: active.gradient }}
-                  onMouseEnter={e => {
-                    if (!loading) {
-                      e.currentTarget.style.transform = "translateY(-1px)"
-                      e.currentTarget.style.boxShadow = `0 8px 20px -4px ${active.accentBorder}`
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = ""
-                    e.currentTarget.style.boxShadow = ""
-                  }}
+                  onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 8px 20px -4px ${active.accentBorder}` } }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "" }}
                 >
                   {loading ? "Signing in…" : `Sign in as ${active.label}`}
                 </button>
@@ -331,7 +263,6 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Footer link */}
           <p className="mt-8 text-sm text-on-surface-variant">
             Don&apos;t have an account?{" "}
             <Link href="/register" className="font-semibold hover:underline underline-offset-4" style={{ color: active.accent }}>
