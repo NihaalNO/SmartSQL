@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Lookup / identity tables
+// ============================================================================
+
+model Role {
+  id        Int      @id @default(autoincrement()) @map("id")
+  name      String   @map("name")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  users User[]
+
+  @@map("roles")
+}
+
+model User {
+  id          Int    @id @default(autoincrement()) @map("id")
+  supabaseUid String? @unique @map("supabase_uid") @db.Uuid()
+  fullName    String  @map("full_name")
+  email       String  @unique @map("email")
+  roleId      Int     @map("role_id")
+  status      String  @default("active") @map("status")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz()
+
+  role            Role             @relation(fields: [roleId], references: [id])
+  adminProfile    AdminUser?
+  analystProfile  AnalystUser?
+  viewerProfile   ViewerUser?
+  savedQueries    SavedQuery[]
+  queryLogs       QueryLog[]
+  chartPreference ChartPreference?
+  liveDbSessions  LiveDbSession[]
+
+  @@map("users")
+}
+
+// ============================================================================
+// Role-specific profile tables (1:1 with users, keyed on user_id)
+// ============================================================================
+
+model AdminUser {
+  id                      Int     @id @map("user_id")
+  department              String? @map("department")
+  canManageUsers          Boolean @default(true) @map("can_manage_users")
+  canConfigureDatasources Boolean @default(true) @map("can_configure_datasources")
+  seeAllQueryLogs         Boolean @default(true) @map("see_all_query_logs")
+  canManageDatasets       Boolean @default(true) @map("can_manage_datasets")
+  lastDashboardVisitAt    DateTime? @map("last_dashboard_visit_at") @db.Timestamptz()
+  totalUsersManaged       Int      @default(0) @map("total_users_managed")
+  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("admin_users")
+}
+
+model AnalystUser {
+  id                     Int     @id @map("user_id")
+  preferredModelProvider String @default("groq") @map("preferred_model_provider")
+  preferredModelName     String @default("llama-3.3-70b-versatile") @map("preferred_model_name")
+  maxSavedQueries        Int     @default(100) @map("max_saved_queries")
+  canUseLiveDb           Boolean @default(true) @map("can_use_live_db")
+  totalQueriesRun        Int     @default(0) @map("total_queries_run")
+  totalSavedQueries      Int     @default(0) @map("total_saved_queries")
+  lastQueryAt            DateTime? @map("last_query_at") @db.Timestamptz()
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("analyst_users")
+}
+
+model ViewerUser {
+  id             Int     @id @map("user_id")
+  readOnly       Boolean @default(true) @map("read_only")
+  canExportResults Boolean @default(false) @map("can_export_results")
+  lastViewedAt   DateTime? @map("last_viewed_at") @db.Timestamptz()
+  totalViews     Int     @default(0) @map("total_views")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  @@map("viewer_users")
+}
+
+// ============================================================================
+// Shared activity / data tables
+// ============================================================================
+
+model Dataset {
+  id          Int     @id @default(autoincrement()) @map("id")
+  name        String  @map("name")
+  description String? @map("description")
+  sourceType  String  @default("internal_pg") @map("source_type")
+  schemaName  String? @map("schema_name")
+  isActive    Boolean @default(true) @map("is_active")
+  createdBy   Int?    @map("created_by")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  savedQueries SavedQuery[]
+  queryLogs    QueryLog[]
+
+  @@map("datasets")
+}
+
+model SavedQuery {
+  id                     Int     @id @default(autoincrement()) @map("id")
+  userId                 Int     @map("user_id")
+  datasetId              Int?    @map("dataset_id")
+  title                  String  @map("title")
+  naturalLanguageQuery   String  @map("natural_language_query")
+  generatedSql           String  @map("generated_sql")
+  chartType              String? @map("chart_type")
+  isFavorite             Boolean @default(false) @map("is_favorite")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt              DateTime @default(now()) @map("updated_at") @db.Timestamptz()
+
+  user    User     @relation(fields: [userId], references: [id])
+  dataset Dataset? @relation(fields: [datasetId], references: [id])
+
+  @@map("saved_queries")
+}
+
+model QueryLog {
+  id                     Int     @id @default(autoincrement()) @map("id")
+  userId                 Int?    @map("user_id")
+  datasetId              Int?    @map("dataset_id")
+  queryMode              String  @default("internal") @map("query_mode")
+  naturalLanguageQuery   String  @map("natural_language_query")
+  generatedSql           String? @map("generated_sql")
+  executionStatus        String  @default("success") @map("execution_status")
+  errorMessage           String? @map("error_message")
+  executionTimeMs        Int?    @map("execution_time_ms")
+  rowCount               Int?    @map("row_count")
+  modelProvider          String? @map("model_provider")
+  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user     User?     @relation(fields: [userId], references: [id])
+  dataset  Dataset?  @relation(fields: [datasetId], references: [id])
+  feedback Feedback?
+
+  @@map("query_logs")
+}
+
+model Feedback {
+  id          Int     @id @default(autoincrement()) @map("id")
+  queryLogId  Int     @unique @map("query_log_id")
+  userId      Int?    @map("user_id")
+  rating      Int?    @map("rating")
+  comments    String? @map("comments")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  queryLog QueryLog @relation(fields: [queryLogId], references: [id])
+
+  @@map("feedback")
+}
+
+model ChartPreference {
+  id                Int     @id @default(autoincrement()) @map("id")
+  userId            Int     @unique @map("user_id")
+  defaultChartType String? @map("default_chart_type")
+  theme             String  @default("light") @map("theme")
+  showSqlPreview    Boolean @default(true) @map("show_sql_preview")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("chart_preferences")
+}
+
+model LiveDbSession {
+  id               Int     @id @default(autoincrement()) @map("id")
+  userId           Int     @map("user_id")
+  provider         String  @default("supabase") @map("provider")
+  projectRef       String? @map("project_ref")
+  dbHost           String? @map("db_host")
+  dbPort           Int     @default(5432) @map("db_port")
+  dbName           String? @map("db_name")
+  dbUser           String? @map("db_user")
+  connectionLabel  String? @map("connection_label")
+  isActive         Boolean @default(true) @map("is_active")
+  expiresAt        DateTime? @map("expires_at") @db.Timestamptz()
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  endedAt          DateTime? @map("ended_at") @db.Timestamptz()
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("live_db_sessions")
+}

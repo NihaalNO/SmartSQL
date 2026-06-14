@@ -1,47 +1,39 @@
 # ============================================================
-# Backend gitignore — FastAPI / Python
+# Backend gitignore — Express.js / TypeScript
 # ============================================================
 
-# ── Environment & secrets ────────────────────────────────────
+# ── Environment & secrets ──────────────────────────────────
 .env
 .env.*
 !.env.example
 
-# ── Python runtime ───────────────────────────────────────────
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.pyc
-.Python
+# ── Dependencies ─────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
 
-# ── Virtual environments ─────────────────────────────────────
-venv/
-.venv/
-env/
-ENV/
-
-# ── Package / build artefacts ────────────────────────────────
-*.egg-info/
+# ── Build output ───────────────────────────────────────────
 dist/
-build/
-*.egg
-.eggs/
-site/
+*.tsbuildinfo
 
-# ── Test & coverage ──────────────────────────────────────────
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# ── Type-checker / linter caches ─────────────────────────────
-.mypy_cache/
-.ruff_cache/
-
-# ── Logs ─────────────────────────────────────────────────────
+# ── Logs ───────────────────────────────────────────────────
 *.log
 logs/
 
-# ── Seeder scripts (local-only utility) ──────────────────────
-seed_demo.py
+# ── Testing & coverage ─────────────────────────────────────
+coverage/
+.nyc_output
+
+# ── Lint & type cache ──────────────────────────────────────
+.eslintcache
+
+# ── OS & editor ────────────────────────────────────────────
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# ── Local-only directories ─────────────────────────────────
+.claude/
