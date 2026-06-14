@@ -103,16 +103,35 @@ SmartSQL/
 │   ├── main.py                 # FastAPI entry point
 │   ├── requirements.txt
 │   ├── .env.example
+│   ├── seed_demo.py            # Demo data seeding script
 │   └── app/
+│       ├── __init__.py
 │       ├── config.py           # Settings (pydantic-settings)
 │       ├── db.py               # SQLAlchemy engine + session
 │       ├── models.py           # ORM models (mirror of schema.sql)
-│       ├── auth/               # Register, login, JWT, RBAC
-│       ├── queries/            # run, run-live, save, history, feedback
-│       ├── schema_service/     # Schema introspection endpoints
-│       └── ai/
-│           ├── langchain_agent.py   # Text-to-SQL + insight generation
-│           └── ml_insights.py       # scikit-learn anomaly / cluster utils
+│       ├── supabase_client.py  # Supabase client initialization
+│       ├── auth/               # Authentication & Authorization
+│       │   ├── __init__.py
+│       │   ├── router.py       # Register, login, logout, JWT endpoints
+│       │   ├── schemas.py      # Pydantic schemas (UserCreate, LoginResponse)
+│       │   └── utils.py        # JWT utils, RBAC, get_current_user
+│       ├── queries/            # Query execution & history
+│       │   ├── __init__.py
+│       │   ├── router.py       # Endpoints: run, run-live, save, history
+│       │   ├── schemas.py      # Pydantic schemas (QueryRequest, QueryResponse)
+│       │   ├── sql_validator.py # SQL safety checks (read-only guard)
+│       │   └── sql_executor.py # MySQL & Supabase execution layer
+│       ├── schema_service/     # Database schema introspection
+│       │   ├── __init__.py
+│       │   ├── router.py       # GET /api/schema endpoints
+│       │   └── service.py      # Schema extraction & caching
+│       ├── admin/              # Admin-only endpoints
+│       │   ├── __init__.py
+│       │   └── router.py       # Moderator panel routes
+│       └── ai/                 # AI & ML capabilities
+│           ├── __init__.py
+│           ├── langchain_agent.py   # Text-to-SQL generation + insights
+│           └── ml_insights.py       # scikit-learn utilities (anomaly, clustering)
 └── frontend/
     ├── app/
     │   ├── (app)/              # Protected routes (sidebar layout)
@@ -133,3 +152,14 @@ SmartSQL/
         ├── api.ts              # Axios client + all API calls
         └── auth.ts             # Cookie + sessionStorage auth helpers
 ```
+
+### Backend Modules Overview
+
+| Module | Purpose | Key Files |
+|--------|---------|-----------|
+| **auth** | User authentication, registration, JWT tokens, role-based access control | `router.py`, `schemas.py`, `utils.py` |
+| **queries** | SQL query execution, history tracking, saved queries, result validation | `router.py`, `sql_executor.py`, `sql_validator.py` |
+| **schema_service** | Database schema introspection and metadata endpoints | `router.py`, `service.py` |
+| **admin** | Admin-only moderator panel endpoints (hidden from UI) | `router.py` |
+| **ai** | LangChain-based text-to-SQL generation and ML insights | `langchain_agent.py`, `ml_insights.py` |
+| **Core** | Configuration, database, models, Supabase client | `config.py`, `db.py`, `models.py`, `supabase_client.py` |

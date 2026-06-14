@@ -1,11 +1,13 @@
 "use client"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
 import { Database, Mail, Lock, BarChart2, Eye } from "lucide-react"
 import { authApi } from "@/lib/api"
-import { saveAuth } from "@/lib/auth"
+import { saveAuth, getAndClearRedirectUrl } from "@/lib/auth/session"
 import Link from "next/link"
+
+export const dynamic = 'force-dynamic'
 
 // ---------------------------------------------------------------------------
 // Role definitions — analyst and viewer only
@@ -52,6 +54,7 @@ const ROLES: {
 // ---------------------------------------------------------------------------
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading,      setLoading]      = useState(false)
   const [selectedRole, setSelectedRole] = useState<RoleId>("analyst")
   const [email,        setEmail]        = useState("")
@@ -65,7 +68,9 @@ export default function LoginPage() {
     try {
       const res = await authApi.login(email.trim(), password)
       saveAuth(res)
-      router.push("/dashboard")
+      // Use redirect from searchParams or fallback to dashboard
+      const redirectUrl = searchParams.get("redirect") || getAndClearRedirectUrl() || "/dashboard"
+      router.push(redirectUrl)
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||

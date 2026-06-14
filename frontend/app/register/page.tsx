@@ -1,12 +1,14 @@
 "use client"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
 import { Database, User, Mail, Lock, BarChart2, Eye, CheckCircle2 } from "lucide-react"
 import { authApi } from "@/lib/api"
-import { saveAuth } from "@/lib/auth"
+import { saveAuth, getAndClearRedirectUrl } from "@/lib/auth/session"
 import Link from "next/link"
+
+export const dynamic = 'force-dynamic'
 
 // ---------------------------------------------------------------------------
 // Role definitions
@@ -51,10 +53,6 @@ const ROLES: {
   },
 ]
 
-function getRedirectPath(_role: string) {
-  return "/dashboard"
-}
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -66,6 +64,7 @@ interface RegisterForm {
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [selectedRole, setSelectedRole] = useState<RoleId>("analyst")
@@ -79,7 +78,9 @@ export default function RegisterPage() {
     try {
       const res = await authApi.register({ ...data, role: selectedRole })
       saveAuth(res)
-      router.push(getRedirectPath(res.role))
+      // Use redirect from searchParams or fallback to dashboard
+      const redirectUrl = searchParams.get("redirect") || getAndClearRedirectUrl() || "/dashboard"
+      router.push(redirectUrl)
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
