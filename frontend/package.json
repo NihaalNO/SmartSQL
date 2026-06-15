@@ -30,7 +30,8 @@
     "react-hot-toast": "^2.4.1",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.3.0",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "@supabase/supabase-js": "^2.49.0"
   },
   "devDependencies": {
     "@types/js-cookie": "^3.0.6",

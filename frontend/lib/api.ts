@@ -42,8 +42,23 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post("/api/auth/login", { email, password }).then((r) => r.data),
 
+  loginWithGoogle: (data: { code: string }) =>
+    api.post("/api/auth/login/google", data).then((r) => r.data),
+
   adminLogin: (admin_name: string, admin_code: string) =>
     api.post("/api/auth/admin-login", { admin_name, admin_code }).then((r) => r.data),
+
+  verifyEmail: (token: string) =>
+    api.get(`/api/auth/verify-email?token=${token}`).then((r) => r.data),
+
+  forgotPassword: (email: string) =>
+    api.post("/api/auth/forgot-password", { email }).then((r) => r.data),
+
+  resetPassword: (data: { token: string; password: string }) =>
+    api.post("/api/auth/reset-password", data).then((r) => r.data),
+
+  resendVerificationEmail: () =>
+    api.post("/api/auth/resend-verification-email").then((r) => r.data),
 
   me: () => api.get("/api/auth/me").then((r) => r.data),
 }

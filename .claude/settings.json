@@ -89,13 +89,18 @@
       "Bash(git add *)",
       "Bash(git status *)",
       "Bash(git commit -m 'feat\\(backend\\): migrate from FastAPI to Express.js *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git commit -m 'feat\\(frontend\\): integrate Shadcn/UI components and implement page redirection logic *)",
+      "Bash(mkdir -p backend/src/services)",
+      "Bash(xargs grep -l \"oauth\\\\|callback\\\\|OAuth\\\\|Callback\")",
+      "Bash(xgrep -l supabase)"
     ],
     "additionalDirectories": [
       "C:\\Users\\odath\\AppData\\Roaming\\Python\\Python313\\site-packages\\uvicorn",
       "\\home\\user",
       "C:\\Users\\odath\\.claude\\plans",
-      "D:\\SmartSQL\\frontend\\frontend"
+      "D:\\SmartSQL\\frontend\\frontend",
+      "D:\\SmartSQL\\backend\\backend\\src"
     ]
   }
 }

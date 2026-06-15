@@ -32,17 +32,73 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value
   const modToken = request.cookies.get('mod_token')?.value
 
+  // Helper function to check if a redirect URL is safe (same origin or relative)
+  function isSafeRedirect(redirect: string, requestUrl: URL): boolean {
+    // Check for protocol-relative URLs
+    if (redirect.startsWith('//')) {
+      return false;
+    }
+    try {
+      const url = new URL(redirect, requestUrl.origin);
+      return url.origin === requestUrl.origin;
+    } catch {
+      // If it's a relative URL (no protocol), it's safe if it doesn't contain '://' (to avoid javascript: or data:)
+      return !redirect.includes('://');
+    }
+  }
+
   // Redirect to login if trying to access protected route without auth
   if (isProtectedPath && !token) {
+    let redirect = request.nextUrl.searchParams.get('redirect');
+    if (!redirect) {
+      redirect = pathname;
+    }
+    const safeRedirect = isSafeRedirect(redirect, request.nextUrl) ? redirect : '/dashboard';
     const url = new URL('/login', request.url)
-    url.searchParams.set('redirect', pathname)
+    url.searchParams.set('redirect', safeRedirect)
     return NextResponse.redirect(url)
+  }
+
+  // Check email verification for protected paths (if authenticated)
+  if (isProtectedPath && token) {
+    try {
+      // Call our auth/me endpoint to get user data including email verification status
+      const authResp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (authResp.ok) {
+        const userData = await authResp.json()
+        // If user exists but email is not verified, redirect to email verification page
+        if (userData && !userData.email_verified) {
+          let redirect = request.nextUrl.searchParams.get('redirect');
+          if (!redirect) {
+            redirect = pathname;
+          }
+          const safeRedirect = isSafeRedirect(redirect, request.nextUrl) ? redirect : '/dashboard';
+          const url = new URL('/verify-email-warning', request.url)
+          url.searchParams.set('redirect', safeRedirect)
+          return NextResponse.redirect(url)
+        }
+      }
+      // If auth fails, they'll be caught by the !token check above and redirected to login
+    } catch (error) {
+      // If we can't check verification status, continue with auth check only
+      console.warn('Could not verify email status:', error)
+    }
   }
 
   // Redirect to moderator login if trying to access mod route without mod auth
   if (isModeratorPath && !modToken) {
+    let redirect = request.nextUrl.searchParams.get('redirect');
+    if (!redirect) {
+      redirect = pathname;
+    }
+    const safeRedirect = isSafeRedirect(redirect, request.nextUrl) ? redirect : '/dashboard';
     const url = new URL('/moderator/login', request.url)
-    url.searchParams.set('redirect', pathname)
+    url.searchParams.set('redirect', safeRedirect)
     return NextResponse.redirect(url)
   }
 

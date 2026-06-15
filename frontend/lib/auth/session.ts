@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string
   role: string
   access_token: string
+  email_verified: boolean
 }
 
 // Session keys
@@ -66,7 +67,7 @@ export function getAuthToken(): string | null {
 export function clearAuth() {
   if (typeof window !== 'undefined') {
     Cookies.remove(MAIN_TOKEN_KEY, { path: '/' })
-    sessionStorage.removeItem(MAIN_USER_KEY)
+    sessionStorage.remove(MAIN_USER_KEY)
   }
 }
 

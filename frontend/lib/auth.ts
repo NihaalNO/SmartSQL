@@ -9,6 +9,7 @@ export interface AuthUser {
   email: string
   role: string
   access_token: string
+  email_verified: boolean
 }
 
 export function saveAuth(data: AuthUser) {
@@ -84,6 +85,11 @@ export function isLoggedIn(): boolean {
   const result = !!Cookies.get("token")
   console.log('isLoggedIn:', result, 'cookie:', Cookies.get("token"))
   return result
+}
+
+export function isEmailVerified(): boolean {
+  const user = getUser()
+  return user?.email_verified ?? false
 }
 
 export function getRole(): string {

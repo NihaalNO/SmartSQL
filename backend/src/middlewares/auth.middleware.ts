@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import * as jwt from "jsonwebtoken";
 import { env } from "../config/env";
 import { getSupabase } from "../config/supabase";
 import { ApiError } from "../utils/ApiError";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import dotenv from "dotenv";
+import * as dotenv from "dotenv";
 
 // Load .env file
 dotenv.config();
@@ -34,6 +34,13 @@ const envSchema = z.object({
 
   // CORS
   FRONTEND_URL: z.string().url().optional().default("http://localhost:3000"),
+
+  // Email Verification & Password Reset
+  SENDGRID_API_KEY: z.string().min(1, "SENDGRID_API_KEY is required"),
+  SENDGRID_FROM_EMAIL: z.string().email("SENDGRID_FROM_EMAIL must be a valid email"),
+  NEXT_PUBLIC_APP_URL: z.string().url(),
+  EMAIL_VERIFICATION_SECRET: z.string().min(1, "EMAIL_VERIFICATION_SECRET is required"),
+  PASSWORD_RESET_SECRET: z.string().min(1, "PASSWORD_RESET_SECRET is required"),
 });
 
 const parsed = envSchema.safeParse(process.env);

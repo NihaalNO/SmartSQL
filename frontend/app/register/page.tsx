@@ -1,39 +1,44 @@
 "use client"
-import { useState } from "react"
+
+import { useMemo, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
-import { Database, User, Mail, Lock, BarChart2, Eye, CheckCircle2 } from "lucide-react"
-import { authApi } from "@/lib/api"
-import { saveAuth, getAndClearRedirectUrl } from "@/lib/auth/session"
+import {
+  Database,
+  User,
+  Mail,
+  Lock,
+  BarChart2,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+} from "lucide-react"
 import Link from "next/link"
 
-export const dynamic = 'force-dynamic'
+import { authApi } from "@/lib/api"
+import { saveAuth, getAndClearRedirectUrl } from "@/lib/auth/session"
+import { supabase } from "@/lib/supabase"
 
-// ---------------------------------------------------------------------------
-// Role definitions
-// ---------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// Role Definitions
+// -----------------------------------------------------------------------------
+
 type RoleId = "analyst" | "viewer"
 
-const ROLES: {
-  id: RoleId
-  label: string
-  icon: React.ElementType
-  tagline: string
-  description: string
-  perks: string[]
-  accent: string
-  accentBg: string
-  accentBorder: string
-  gradient: string
-}[] = [
+const ROLES = [
   {
     id: "analyst",
     label: "Analyst",
     icon: BarChart2,
     tagline: "Data Explorer",
     description: "Query and visualise data at scale",
-    perks: ["Run text-to-SQL queries", "Save & manage queries", "Connect live databases", "Chart & visualise results"],
+    perks: [
+      "Run text-to-SQL queries",
+      "Save & manage queries",
+      "Connect live databases",
+      "Chart & visualise results",
+    ],
     accent: "#004ac6",
     accentBg: "rgba(0,74,198,0.07)",
     accentBorder: "rgba(0,74,198,0.28)",
@@ -45,17 +50,19 @@ const ROLES: {
     icon: Eye,
     tagline: "Read-Only Access",
     description: "Explore shared insights safely",
-    perks: ["Browse query history", "View shared results", "Read-only data access", "No write permissions"],
+    perks: [
+      "Browse query history",
+      "View shared results",
+      "Read-only data access",
+      "No write permissions",
+    ],
     accent: "#047857",
     accentBg: "rgba(4,120,87,0.07)",
     accentBorder: "rgba(4,120,87,0.28)",
     gradient: "linear-gradient(135deg,#047857 0%,#065f46 100%)",
   },
-]
+] as const
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 interface RegisterForm {
   full_name: string
   email: string
@@ -65,26 +72,100 @@ interface RegisterForm {
 export default function RegisterPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<RoleId>("analyst")
-  const { register, handleSubmit, formState: { errors } } = useForm<RegisterForm>()
+  const [showPassword, setShowPassword] = useState(false)
+  const [selectedRole, setSelectedRole] =
+    useState<RoleId>("analyst")
 
-  const active = ROLES.find(r => r.id === selectedRole)!
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<RegisterForm>()
+
+  const active = useMemo(
+    () => ROLES.find((r) => r.id === selectedRole)!,
+    [selectedRole]
+  )
+
+  const ActiveIcon = active.icon
+
+  // ---------------------------------------------------------------------------
+  // Google Auth
+  // ---------------------------------------------------------------------------
+
+  const handleGoogleSignUp = async () => {
+    try {
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : ""
+
+      const { error } =
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo,
+            queryParams: {
+              access_type: "offline",
+              prompt: "consent",
+            },
+          },
+        })
+
+      if (error) {
+        toast.error(error.message)
+      }
+    } catch {
+      toast.error("Google sign in failed")
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Form Submit
+  // ---------------------------------------------------------------------------
 
   const onSubmit = async (data: RegisterForm) => {
-    if (!agreed) { toast.error("Please agree to the Terms of Service"); return }
+    if (loading) return
+
+    if (!agreed) {
+      toast.error(
+        "Please agree to the Terms of Service"
+      )
+      return
+    }
+
     setLoading(true)
+
     try {
-      const res = await authApi.register({ ...data, role: selectedRole })
+      const res = await authApi.register({
+        ...data,
+        role: selectedRole,
+      })
+
       saveAuth(res)
-      // Use redirect from searchParams or fallback to dashboard
-      const redirectUrl = searchParams.get("redirect") || getAndClearRedirectUrl() || "/dashboard"
+
+      const redirectUrl =
+        searchParams.get("redirect") ||
+        getAndClearRedirectUrl() ||
+        "/dashboard"
+
+      toast.success("Account created successfully")
+
       router.push(redirectUrl)
     } catch (err: unknown) {
       const msg =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        (
+          err as {
+            response?: {
+              data?: { detail?: string }
+            }
+          }
+        )?.response?.data?.detail ||
         "Registration failed. Please try again."
+
       toast.error(msg)
     } finally {
       setLoading(false)
@@ -93,282 +174,327 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col font-body-md text-on-surface"
+      className="min-h-screen flex flex-col"
       style={{ backgroundColor: "#f9fafb" }}
     >
       {/* Background blobs */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div
-          className="absolute top-[8%] left-[4%] w-96 h-96 rounded-full"
-          style={{ backgroundColor: `${active.accentBg}`, filter: "blur(100px)", transition: "background-color 0.4s" }}
+          className="absolute top-[8%] left-[4%] w-96 h-96 rounded-full blur-[100px]"
+          style={{
+            backgroundColor: active.accentBg,
+          }}
         />
         <div
-          className="absolute bottom-[8%] right-[4%] w-80 h-80 rounded-full"
-          style={{ backgroundColor: `${active.accentBg}`, filter: "blur(80px)", transition: "background-color 0.4s" }}
+          className="absolute bottom-[8%] right-[4%] w-80 h-80 rounded-full blur-[80px]"
+          style={{
+            backgroundColor: active.accentBg,
+          }}
         />
       </div>
 
       {/* Navbar */}
-      <header
-        className="sticky top-0 w-full z-50 backdrop-blur-md border-b shadow-sm"
-        style={{ backgroundColor: "rgba(255,255,255,0.85)", borderColor: "rgba(229,231,235,0.15)" }}
-      >
+      <header className="sticky top-0 z-50 border-b backdrop-blur-md bg-white/85 shadow-sm">
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <Database size={22} className="text-primary" />
-            <span className="text-lg font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>
+          <Link
+            href="/"
+            className="flex items-center gap-2"
+          >
+            <Database size={22} />
+            <span className="text-lg font-bold">
               SmartSQL
             </span>
           </Link>
+
           <div className="hidden md:flex gap-6">
-            <Link href="/#features" className="text-sm text-on-surface-variant hover:text-primary transition-colors">Features</Link>
-            <Link href="/#how-it-works" className="text-sm text-on-surface-variant hover:text-primary transition-colors">How it Works</Link>
+            <Link href="/#features">
+              Features
+            </Link>
+            <Link href="/#how-it-works">
+              How it Works
+            </Link>
           </div>
         </div>
       </header>
 
       {/* Main */}
-      <main className="flex-grow flex items-start justify-center px-4 py-10">
+      <main className="flex-grow flex justify-center px-4 py-10">
         <div className="w-full max-w-2xl">
-
           {/* Heading */}
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-on-surface tracking-tight mb-2" style={{ fontFamily: "Inter,sans-serif" }}>
+            <h1 className="text-3xl font-bold mb-2">
               Create your account
             </h1>
-            <p className="text-sm text-on-surface-variant">Select your role to get the right level of access</p>
+
+            <p className="text-gray-500 text-sm">
+              Select your role to get the right
+              level of access
+            </p>
           </div>
 
-          {/* ── Role selector cards ─────────────────────────────────────── */}
-          <div className="grid grid-cols-3 gap-3 mb-6">
-            {ROLES.map(role => {
+          {/* Role Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            {ROLES.map((role) => {
               const Icon = role.icon
-              const isActive = selectedRole === role.id
+              const isActive =
+                selectedRole === role.id
+
               return (
                 <button
                   key={role.id}
                   type="button"
-                  onClick={() => setSelectedRole(role.id)}
-                  className="relative flex flex-col items-center gap-3 p-5 rounded-xl border-2 text-center transition-all duration-250 focus:outline-none"
+                  onClick={() =>
+                    setSelectedRole(role.id)
+                  }
+                  className="relative p-5 rounded-xl border-2 transition-all duration-300"
                   style={{
-                    backgroundColor: isActive ? role.accentBg : "#fff",
-                    borderColor: isActive ? role.accent : "#e5e7eb",
-                    boxShadow: isActive ? `0 0 0 3px ${role.accentBg}, 0 6px 16px ${role.accentBg}` : "none",
-                    transform: isActive ? "translateY(-3px)" : "none",
+                    backgroundColor: isActive
+                      ? role.accentBg
+                      : "#fff",
+                    borderColor: isActive
+                      ? role.accent
+                      : "#e5e7eb",
+                    transform: isActive
+                      ? "translateY(-2px)"
+                      : "none",
                   }}
                 >
-                  {/* Selected checkmark */}
                   {isActive && (
-                    <span className="absolute top-2.5 right-2.5">
-                      <CheckCircle2 size={16} style={{ color: role.accent }} />
-                    </span>
+                    <CheckCircle2
+                      className="absolute top-3 right-3"
+                      size={18}
+                      style={{
+                        color: role.accent,
+                      }}
+                    />
                   )}
 
-                  {/* Icon */}
                   <div
-                    className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3"
                     style={{
-                      background: isActive ? role.gradient : "rgba(107,114,128,0.10)",
-                      transition: "background 0.3s",
+                      background: isActive
+                        ? role.gradient
+                        : "#f3f4f6",
                     }}
                   >
-                    <Icon size={22} style={{ color: isActive ? "#fff" : "#6b7280" }} />
+                    <Icon
+                      size={22}
+                      color={
+                        isActive
+                          ? "#fff"
+                          : "#6b7280"
+                      }
+                    />
                   </div>
 
-                  {/* Labels */}
-                  <div>
-                    <p
-                      className="text-sm font-bold leading-tight"
-                      style={{ color: isActive ? role.accent : "#374151", transition: "color 0.2s" }}
-                    >
-                      {role.label}
-                    </p>
-                    <p
-                      className="text-xs mt-0.5 leading-tight"
-                      style={{ color: isActive ? role.accent : "#9ca3af", opacity: isActive ? 0.85 : 1 }}
-                    >
-                      {role.tagline}
-                    </p>
-                  </div>
+                  <h3
+                    className="font-semibold"
+                    style={{
+                      color: isActive
+                        ? role.accent
+                        : "#111827",
+                    }}
+                  >
+                    {role.label}
+                  </h3>
+
+                  <p className="text-sm text-gray-500">
+                    {role.tagline}
+                  </p>
                 </button>
               )
             })}
           </div>
 
-          {/* ── Role perks panel ────────────────────────────────────────── */}
+          {/* Role Perks */}
           <div
-            className="w-full mb-6 px-5 py-4 rounded-xl border transition-all duration-300"
-            style={{ backgroundColor: active.accentBg, borderColor: active.accentBorder }}
+            className="rounded-xl border p-5 mb-6"
+            style={{
+              backgroundColor:
+                active.accentBg,
+              borderColor:
+                active.accentBorder,
+            }}
           >
             <div className="flex items-center gap-2 mb-3">
-              <active.icon size={15} style={{ color: active.accent }} />
-              <p className="text-sm font-semibold" style={{ color: active.accent }}>
-                {active.label} — {active.description}
-              </p>
+              <ActiveIcon
+                size={16}
+                style={{
+                  color: active.accent,
+                }}
+              />
+
+              <span
+                className="font-semibold"
+                style={{
+                  color: active.accent,
+                }}
+              >
+                {active.label} —{" "}
+                {active.description}
+              </span>
             </div>
-            <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-              {active.perks.map(perk => (
-                <li key={perk} className="flex items-center gap-1.5 text-xs" style={{ color: active.accent }}>
-                  <CheckCircle2 size={12} className="flex-shrink-0" />
+
+            <ul className="grid md:grid-cols-2 gap-2">
+              {active.perks.map((perk) => (
+                <li
+                  key={perk}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <CheckCircle2
+                    size={14}
+                    style={{
+                      color:
+                        active.accent,
+                    }}
+                  />
                   {perk}
                 </li>
               ))}
             </ul>
           </div>
 
-          {/* ── Registration card ───────────────────────────────────────── */}
-          <div className="w-full bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
-
-            {/* Accent header strip */}
-            <div className="h-1.5 w-full transition-all duration-300" style={{ background: active.gradient }} />
+          {/* Register Card */}
+          <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div
+              className="h-1.5"
+              style={{
+                background:
+                  active.gradient,
+              }}
+            />
 
             <div className="p-8">
-
-              {/* Google SSO */}
+              {/* Google Button */}
               <button
                 type="button"
-                onClick={() => toast("Google sign-up coming soon")}
-                className="w-full flex items-center justify-center gap-3 h-11 bg-surface border border-outline rounded-lg text-sm text-on-surface transition-all duration-200 hover:bg-gray-50 mb-5"
+                onClick={
+                  handleGoogleSignUp
+                }
+                className="w-full h-11 border rounded-lg flex items-center justify-center gap-3 hover:bg-gray-50 transition"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 6.34l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
                 Sign up with Google
               </button>
 
-              {/* Divider */}
-              <div className="relative flex items-center mb-5">
-                <div className="flex-grow border-t border-outline" />
-                <span className="flex-shrink mx-3 text-xs text-on-surface-variant">OR CONTINUE WITH EMAIL</span>
-                <div className="flex-grow border-t border-outline" />
+              <div className="my-5 text-center text-xs text-gray-400">
+                OR CONTINUE WITH EMAIL
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form
+                onSubmit={handleSubmit(
+                  onSubmit
+                )}
+                className="space-y-4"
+              >
+                <input
+                  {...register(
+                    "full_name",
+                    {
+                      required:
+                        "Name is required",
+                    }
+                  )}
+                  placeholder="Full Name"
+                  className="w-full h-11 border rounded-lg px-4"
+                />
 
-                {/* Full Name */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-on-surface-variant">Full Name</label>
-                  <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                    <input
-                      {...register("full_name", { required: "Name is required" })}
-                      placeholder="John Doe"
-                      className="w-full pl-10 h-11 bg-white border rounded-lg text-sm outline-none transition-all"
-                      style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => {
-                        e.currentTarget.style.borderColor = active.accent
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}`
-                      }}
-                      onBlur={e => {
-                        e.currentTarget.style.borderColor = "#e5e7eb"
-                        e.currentTarget.style.boxShadow = ""
-                      }}
-                    />
-                  </div>
-                  {errors.full_name && <p className="text-red-500 text-xs">{errors.full_name.message}</p>}
+                <input
+                  {...register("email", {
+                    required:
+                      "Email is required",
+                    pattern: {
+                      value:
+                        /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message:
+                        "Enter valid email",
+                    },
+                  })}
+                  placeholder="Email"
+                  className="w-full h-11 border rounded-lg px-4"
+                />
+
+                <div className="relative">
+                  <input
+                    {...register(
+                      "password",
+                      {
+                        required:
+                          "Password is required",
+                        minLength: {
+                          value: 8,
+                          message:
+                            "Minimum 8 characters",
+                        },
+                      }
+                    )}
+                    type={
+                      showPassword
+                        ? "text"
+                        : "password"
+                    }
+                    placeholder="Password"
+                    className="w-full h-11 border rounded-lg px-4 pr-12"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setShowPassword(
+                        !showPassword
+                      )
+                    }
+                    className="absolute right-4 top-1/2 -translate-y-1/2"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
+                  </button>
                 </div>
 
-                {/* Email */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-on-surface-variant">Business Email</label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                    <input
-                      {...register("email", { required: "Email is required" })}
-                      type="email"
-                      placeholder="john@company.com"
-                      className="w-full pl-10 h-11 bg-white border rounded-lg text-sm outline-none transition-all"
-                      style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => {
-                        e.currentTarget.style.borderColor = active.accent
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}`
-                      }}
-                      onBlur={e => {
-                        e.currentTarget.style.borderColor = "#e5e7eb"
-                        e.currentTarget.style.boxShadow = ""
-                      }}
-                    />
-                  </div>
-                  {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
-                </div>
-
-                {/* Password */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-on-surface-variant">Password</label>
-                  <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                    <input
-                      {...register("password", {
-                        required: "Password is required",
-                        minLength: { value: 8, message: "Minimum 8 characters" },
-                      })}
-                      type="password"
-                      placeholder="••••••••"
-                      className="w-full pl-10 h-11 bg-white border rounded-lg text-sm outline-none transition-all"
-                      style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => {
-                        e.currentTarget.style.borderColor = active.accent
-                        e.currentTarget.style.boxShadow = `0 0 0 3px ${active.accentBg}`
-                      }}
-                      onBlur={e => {
-                        e.currentTarget.style.borderColor = "#e5e7eb"
-                        e.currentTarget.style.boxShadow = ""
-                      }}
-                    />
-                  </div>
-                  {errors.password && <p className="text-red-500 text-xs">{errors.password.message}</p>}
-                </div>
-
-                {/* Terms */}
-                <div className="flex items-start gap-3 pt-1">
+                <label className="flex gap-2 text-sm">
                   <input
                     type="checkbox"
                     checked={agreed}
-                    onChange={e => setAgreed(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 rounded flex-shrink-0"
-                    style={{ accentColor: active.accent }}
+                    onChange={(e) =>
+                      setAgreed(
+                        e.target.checked
+                      )
+                    }
                   />
-                  <p className="text-xs text-on-surface-variant leading-relaxed">
-                    I agree to the{" "}
-                    <Link href="#" className="hover:underline" style={{ color: active.accent }}>Terms of Service</Link>
-                    {" "}and{" "}
-                    <Link href="#" className="hover:underline" style={{ color: active.accent }}>Privacy Policy</Link>.
-                  </p>
-                </div>
+                  I agree to Terms &
+                  Privacy Policy
+                </label>
 
-                {/* CTA */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xl text-sm font-semibold text-white shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ background: active.gradient }}
-                  onMouseEnter={e => {
-                    if (!loading) {
-                      e.currentTarget.style.transform = "translateY(-1px)"
-                      e.currentTarget.style.boxShadow = `0 8px 20px -4px ${active.accentBorder}`
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = ""
-                    e.currentTarget.style.boxShadow = ""
+                  className="w-full h-11 rounded-xl text-white font-semibold disabled:opacity-50"
+                  style={{
+                    background:
+                      active.gradient,
                   }}
                 >
-                  {loading ? "Creating account…" : `Create ${active.label} Account`}
+                  {loading
+                    ? "Creating..."
+                    : `Create ${active.label} Account`}
                 </button>
               </form>
 
-              {/* Redirect */}
-              <div className="mt-5 pt-5 text-center border-t border-outline">
-                <p className="text-sm text-on-surface-variant">
-                  Already have an account?{" "}
-                  <Link href="/login" className="font-semibold hover:underline" style={{ color: active.accent }}>
-                    Log in
-                  </Link>
-                </p>
+              <div className="mt-6 text-center text-sm">
+                Already have an
+                account?{" "}
+                <Link
+                  href="/login"
+                  className="font-semibold"
+                  style={{
+                    color:
+                      active.accent,
+                  }}
+                >
+                  Login
+                </Link>
               </div>
             </div>
           </div>
@@ -376,19 +502,9 @@ export default function RegisterPage() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-6 bg-surface border-t border-outline mt-6">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2 opacity-60 grayscale">
-            <Database size={16} />
-            <span className="text-base font-bold" style={{ fontFamily: "Inter,sans-serif" }}>SmartSQL</span>
-          </div>
-          <div className="flex gap-6">
-            {["Privacy Policy", "Terms of Service", "Contact Sales"].map(l => (
-              <Link key={l} href="#" className="text-xs text-on-secondary-container hover:text-on-surface transition-colors">{l}</Link>
-            ))}
-          </div>
-          <p className="text-xs text-on-secondary-fixed-variant opacity-60">© 2025 SmartSQL Analytics.</p>
-        </div>
+      <footer className="border-t py-6 text-center text-sm text-gray-500">
+        © {new Date().getFullYear()} SmartSQL
+        Analytics
       </footer>
     </div>
   )
