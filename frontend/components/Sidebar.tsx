@@ -9,10 +9,6 @@ import {
 } from "lucide-react"
 import { logout, getUser } from "@/lib/auth"
 
-// ---------------------------------------------------------------------------
-// Nav config
-// ---------------------------------------------------------------------------
-
 const ALL_NAV = [
   { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard, roles: ["analyst", "viewer"] },
   { href: "/query",     label: "Query",         icon: Search,          roles: ["analyst", "viewer"] },
@@ -21,10 +17,10 @@ const ALL_NAV = [
   { href: "/live-db",   label: "Live DB Mode",  icon: Zap,             roles: ["analyst"] },
 ] as const
 
-const ROLE_META: Record<string, { label: string; bg: string; color: string; border: string }> = {
-  admin:   { label: "Admin",   bg: "rgba(186,26,26,0.20)", color: "#ffb4ab", border: "rgba(186,26,26,0.40)" },
-  analyst: { label: "Analyst", bg: "rgba(0,74,198,0.20)",  color: "#b4c5ff", border: "rgba(0,74,198,0.40)"  },
-  viewer:  { label: "Viewer",  bg: "rgba(87,94,112,0.20)", color: "#c0c6db", border: "rgba(87,94,112,0.40)" },
+const ROLE_META: Record<string, { label: string; color: string }> = {
+  admin:   { label: "Admin",   color: "#EF4444" },
+  analyst: { label: "Analyst", color: "#3B82F6" },
+  viewer:  { label: "Viewer",  color: "#22C55E" },
 }
 
 function getInitials(name: string) {
@@ -34,10 +30,6 @@ function getInitials(name: string) {
     : name.slice(0, 2).toUpperCase()
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
 export default function Sidebar() {
   const [mounted,   setMounted]   = useState(false)
   const [collapsed, setCollapsed] = useState(false)
@@ -45,7 +37,6 @@ export default function Sidebar() {
 
   useEffect(() => {
     setMounted(true)
-    // Persist collapsed state across sessions
     const saved = localStorage.getItem("sidebar-collapsed")
     if (saved === "true") setCollapsed(true)
   }, [])
@@ -64,75 +55,51 @@ export default function Sidebar() {
     : []
   const badge = ROLE_META[role]
 
+  const sidebarW = collapsed ? "w-[68px]" : "w-[240px]"
+
   return (
     <aside
-      className="min-h-screen flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out"
-      style={{ width: collapsed ? "68px" : "240px", background: "#2e3039" }}
+      className={`${sidebarW} min-h-screen flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out
+                  bg-[#050816] border-r border-white/[0.06]`}
     >
-
-      {/* ── Logo ── */}
-      <div
-        className="flex items-center pt-6 pb-5 overflow-hidden transition-all duration-300"
-        style={{ padding: collapsed ? "24px 0 20px" : "24px 24px 20px" }}
-      >
-        {/* Database SVG icon — always visible */}
-        <svg
-          className="shrink-0"
-          style={{ marginLeft: collapsed ? "auto" : "0", marginRight: collapsed ? "auto" : "8px" }}
-          width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="#b4c5ff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-        >
-          <ellipse cx="12" cy="5" rx="9" ry="3"/>
-          <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/>
-          <path d="M3 12c0 1.66 4.03 3 9 3s9-1.34 9-3"/>
-        </svg>
+      <div className={`flex items-center pt-5 pb-4 overflow-hidden transition-all duration-300 ${collapsed ? "justify-center px-0" : "px-5"}`}>
+        <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-[#14B8A6]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+          </svg>
+        </div>
         {!collapsed && (
-          <h1 className="text-headline-sm font-bold whitespace-nowrap overflow-hidden" style={{ color: "#faf8ff" }}>
-            SmartSQL
+          <h1 className="ml-2.5 text-sm font-bold text-[#F8FAFC] whitespace-nowrap overflow-hidden" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
+            Smart<span className="text-[#14B8A6]">SQL</span>
           </h1>
         )}
       </div>
 
-      {/* ── User card ── */}
       {user && (
         <>
-          <div
-            className="flex items-center gap-3 pb-4 overflow-hidden transition-all duration-300"
-            style={{ padding: collapsed ? "0 0 16px" : "0 24px 16px" }}
-          >
-            {/* Avatar — always visible */}
+          <div className={`flex items-center gap-3 pb-3 overflow-hidden transition-all duration-300 ${collapsed ? "justify-center px-0" : "px-5"}`}>
             <div
-              className="shrink-0 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300"
-              style={{
-                width: "40px", height: "40px",
-                background: "#dbe1ff", color: "#00174b",
-                marginLeft: collapsed ? "auto" : "0",
-                marginRight: collapsed ? "auto" : "0",
-              }}
+              className="shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
+              style={{ width: "36px", height: "36px", background: "#14B8A6" }}
               title={collapsed ? (user.full_name ?? "") : undefined}
             >
               {getInitials(user.full_name ?? "U")}
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-label-lg font-semibold truncate" style={{ color: "#faf8ff" }}>
+                <p className="text-sm font-medium truncate text-[#F8FAFC]">
                   {user.full_name}
                 </p>
-                <p className="text-label-sm truncate" style={{ color: "#c3c6d7" }}>
+                <p className="text-xs truncate text-[#64748B]">
                   {user.email}
                 </p>
               </div>
             )}
           </div>
-          <div className="h-px mb-3" style={{
-            marginLeft: collapsed ? "12px" : "24px",
-            marginRight: collapsed ? "12px" : "24px",
-            background: "rgba(195,198,215,0.15)",
-          }} />
+          <div className="h-px mx-5 mb-2 bg-white/[0.06]" />
         </>
       )}
 
-      {/* ── Navigation ── */}
       <nav className="flex-1 space-y-0.5 px-2">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname.startsWith(href)
@@ -141,93 +108,67 @@ export default function Sidebar() {
               key={href}
               href={href}
               title={collapsed ? label : undefined}
-              className="flex items-center rounded-lg font-medium transition-all duration-150 overflow-hidden"
-              style={{
-                gap: collapsed ? "0" : "12px",
-                padding: collapsed ? "10px 0" : "10px 16px",
-                justifyContent: collapsed ? "center" : "flex-start",
-                ...(active
-                  ? { background: "#2563eb", color: "#eeefff" }
-                  : { color: "#c0c6db" }),
-              }}
-              onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "rgba(67,70,85,0.25)" }}
-              onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = "transparent" }}
+              className={`flex items-center rounded-lg font-medium transition-all duration-150 overflow-hidden group relative
+                ${collapsed ? "justify-center py-2.5" : "gap-3 px-3 py-2.5"}
+                ${active
+                  ? "bg-[#14B8A6]/10 text-[#14B8A6]"
+                  : "text-[#64748B] hover:text-[#F8FAFC] hover:bg-white/[0.04]"
+                }`}
             >
-              <Icon size={18} strokeWidth={active ? 2.5 : 1.8} className="shrink-0" />
+              {active && (
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-[#14B8A6]" />
+              )}
+              <Icon size={17} strokeWidth={active ? 2.5 : 1.8} className="shrink-0 transition-transform duration-150 group-hover:scale-110" />
               {!collapsed && (
-                <span className="text-label-lg whitespace-nowrap">{label}</span>
+                <span className="text-sm whitespace-nowrap">{label}</span>
+              )}
+              {active && !collapsed && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#14B8A6] animate-pulse-dot" />
               )}
             </Link>
           )
         })}
       </nav>
 
-      {/* ── Collapse / expand toggle ── */}
       <div className="px-2 pb-2">
         <button
           onClick={toggle}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="flex items-center w-full rounded-lg transition-all duration-150 text-label-lg font-medium"
-          style={{
-            gap: collapsed ? "0" : "12px",
-            padding: collapsed ? "10px 0" : "10px 16px",
-            justifyContent: collapsed ? "center" : "flex-start",
-            color: "rgba(192,198,219,0.55)",
-          }}
-          onMouseEnter={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.background = "rgba(67,70,85,0.25)"
-            el.style.color = "#c0c6db"
-          }}
-          onMouseLeave={e => {
-            const el = e.currentTarget as HTMLElement
-            el.style.background = "transparent"
-            el.style.color = "rgba(192,198,219,0.55)"
-          }}
+          className={`flex items-center w-full rounded-lg transition-all duration-150 text-sm font-medium
+            ${collapsed ? "justify-center py-2.5" : "gap-3 px-3 py-2.5"}
+            text-[#64748B]/50 hover:text-[#64748B] hover:bg-white/[0.04]`}
         >
           {collapsed
-            ? <PanelLeftOpen  size={18} className="shrink-0" />
-            : <PanelLeftClose size={18} className="shrink-0" />
+            ? <PanelLeftOpen  size={17} className="shrink-0" />
+            : <PanelLeftClose size={17} className="shrink-0" />
           }
           {!collapsed && <span>Collapse</span>}
         </button>
       </div>
 
-      {/* ── Footer ── */}
-      <div
-        className="pt-3 pb-5 border-t overflow-hidden transition-all duration-300"
-        style={{
-          borderColor: "rgba(195,198,215,0.15)",
-          padding: collapsed ? "12px 0 20px" : "12px 20px 20px",
-        }}
-      >
-        {/* Role badge — hidden when collapsed */}
+      <div className={`pt-2 pb-4 border-t border-white/[0.06] overflow-hidden transition-all duration-300 ${collapsed ? "px-0" : "px-5"}`}>
         {badge && !collapsed && (
-          <div className="mb-3">
+          <div className="mb-2">
             <span
-              className="inline-flex items-center gap-1.5 text-label-sm px-2.5 py-1 rounded-full border font-semibold"
-              style={{ background: badge.bg, color: badge.color, borderColor: badge.border }}
+              className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-md font-medium"
+              style={{
+                background: `${badge.color}15`,
+                color: badge.color,
+              }}
             >
               <Shield size={10} />
               {badge.label}
             </span>
           </div>
         )}
-
-        {/* Sign out */}
         <button
           onClick={logout}
           title={collapsed ? "Sign out" : undefined}
-          className="flex items-center transition-colors w-full text-label-sm"
-          style={{
-            gap: collapsed ? "0" : "8px",
-            justifyContent: collapsed ? "center" : "flex-start",
-            color: "#c0c6db",
-          }}
-          onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = "#ffb4ab")}
-          onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = "#c0c6db")}
+          className={`flex items-center w-full text-xs transition-colors
+            ${collapsed ? "justify-center" : "gap-2"}
+            text-[#64748B] hover:text-[#EF4444]`}
         >
-          <LogOut size={15} className="shrink-0" />
+          <LogOut size={14} className="shrink-0" />
           {!collapsed && <span>Sign out</span>}
         </button>
       </div>

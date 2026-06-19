@@ -1,6 +1,6 @@
 "use client"
 import { useState } from "react"
-import { ChevronDown, Zap } from "lucide-react"
+import { Zap } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -9,7 +9,6 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
 
 const PROVIDERS = [
   { value: "groq", label: "Groq · llama-3.3-70b" },
@@ -32,6 +31,7 @@ interface Props {
 export default function QueryInput({ onSubmit, loading }: Props) {
   const [question, setQuestion] = useState("")
   const [provider, setProvider] = useState("groq")
+  const [focused, setFocused] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,99 +40,102 @@ export default function QueryInput({ onSubmit, loading }: Props) {
   }
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
-      {/* Example chips */}
-      <div className="px-5 pt-4 pb-3 border-b border-outline-variant/40 flex flex-wrap gap-2">
-        <span className="text-label-sm text-on-surface-variant self-center mr-1">Try:</span>
+    <div className="rounded-lg border overflow-hidden" style={{
+      borderColor: focused ? "rgba(20,184,166,0.3)" : "rgba(148,163,184,0.1)",
+      background: "rgba(255,255,255,0.02)",
+      transition: "border-color 0.2s",
+    }}>
+      <div className="px-4 pt-3 pb-2.5 border-b flex flex-wrap gap-2" style={{ borderColor: "rgba(148,163,184,0.06)" }}>
+        <span className="text-xs self-center mr-1" style={{ color: "#64748B" }}>Try:</span>
         {EXAMPLES.map((q) => (
-          <Button
+          <button
             key={q}
-            variant="outline"
-            size="icon"
-            asChild
+            onClick={() => setQuestion(q)}
+            className="text-xs px-2.5 py-1 rounded-md border transition-colors"
+            style={{ borderColor: "rgba(20,184,166,0.15)", color: "#14B8A6", background: "rgba(20,184,166,0.06)" }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(20,184,166,0.12)" }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(20,184,166,0.06)" }}
           >
-            <button
-              onClick={() => setQuestion(q)}
-              className="text-xs px-3 py-1.5 rounded-full border transition-colors"
-              style={{
-                background: "rgba(0,74,198,0.06)",
-                borderColor: "rgba(0,74,198,0.20)",
-                color: "#004ac6",
-              } as React.CSSProperties}
-              onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLElement).style.background =
-                  "rgba(0,74,198,0.12)"
-              }}
-              onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLElement).style.background =
-                  "rgba(0,74,198,0.06)"
-              }}
-            >
-              {q}
-            </button>
-          </Button>
+            {q}
+          </button>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="p-5 space-y-4">
+      <form onSubmit={handleSubmit} className="p-4 space-y-3">
         <Textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           placeholder="Ask anything in plain English — e.g. 'Show me the top 5 users by saved queries'"
           rows={3}
-          className="w-full"
+          className="w-full rounded-lg px-3 py-2.5 text-sm border transition-colors resize-none"
+          style={{
+            background: "rgba(0,0,0,0.25)",
+            borderColor: focused ? "rgba(20,184,166,0.3)" : "rgba(148,163,184,0.1)",
+            color: "#CBD5E1",
+          }}
           disabled={loading}
         />
 
         <div className="flex items-center gap-3">
-          {/* Provider selector */}
-          <div className="relative w-[200px]">
+          <div className="relative" style={{ width: "180px" }}>
             <Select value={provider} onValueChange={setProvider}>
               <SelectTrigger
-                className="w-full h-10 pl-3 pr-8 border border-outline-variant rounded-lg bg-surface-container-low text-label-lg text-on-surface focus:-outline-none focus:ring-2 transition-colors"
+                className="w-full h-9 pl-3 pr-7 rounded-lg border text-xs transition-colors"
                 style={{
-                  "--tw-ring-color": "#004ac6",
-                } as React.CSSProperties}
+                  background: "rgba(0,0,0,0.25)",
+                  borderColor: "rgba(148,163,184,0.1)",
+                  color: "#CBD5E1",
+                }}
               >
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
-              <SelectContent className="w-full popover">
+              <SelectContent
+                className="rounded-lg border text-xs"
+                style={{
+                  background: "#0A1020",
+                  borderColor: "rgba(148,163,184,0.1)",
+                  color: "#CBD5E1",
+                }}
+              >
                 {PROVIDERS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}>
+                  <SelectItem key={p.value} value={p.value}
+                    className="cursor-pointer py-1.5 px-3"
+                    style={{ color: "#CBD5E1" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(20,184,166,0.08)" }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}>
                     {p.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <ChevronDown
-              size={14}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
-            />
           </div>
 
-          <p className="text-label-sm text-on-surface-variant ml-1 hidden sm:block">
+          <p className="text-xs hidden sm:block" style={{ color: "#64748B" }}>
             Ctrl+Enter to run
           </p>
 
-          {/* Lightning bolt run button */}
-          <Button
+          <button
             type="submit"
             disabled={loading || !question.trim()}
-            className="ml-auto"
-            variant={loading ? "default" : "default"}
+            className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 disabled:opacity-40"
+            style={{ background: "#14B8A6" }}
+            onMouseEnter={e => { if (!loading) e.currentTarget.style.boxShadow = "0 0 12px rgba(20,184,166,0.3)" }}
+            onMouseLeave={e => { e.currentTarget.style.boxShadow = "none" }}
           >
             {loading ? (
               <>
-                <Zap size={16} className="animate-pulse" />
-                Running…
+                <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
+                Generating…
               </>
             ) : (
               <>
-                <Zap size={16} />
-                Run Query
+                <Zap size={14} />
+                Generate SQL
               </>
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </div>

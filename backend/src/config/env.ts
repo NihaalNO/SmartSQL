@@ -38,7 +38,9 @@ const envSchema = z.object({
   // Email Verification & Password Reset
   SENDGRID_API_KEY: z.string().min(1, "SENDGRID_API_KEY is required"),
   SENDGRID_FROM_EMAIL: z.string().email("SENDGRID_FROM_EMAIL must be a valid email"),
-  NEXT_PUBLIC_APP_URL: z.string().url(),
+  NEXT_PUBLIC_APP_URL: z.string().url().optional().default("http://localhost:3000"),
+  GOOGLE_CLIENT_ID: z.string().optional().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
   EMAIL_VERIFICATION_SECRET: z.string().min(1, "EMAIL_VERIFICATION_SECRET is required"),
   PASSWORD_RESET_SECRET: z.string().min(1, "PASSWORD_RESET_SECRET is required"),
 });

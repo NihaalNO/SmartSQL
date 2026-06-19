@@ -34,56 +34,62 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="p-8 max-w-4xl mx-auto space-y-6">
+    <div className="p-6 max-w-4xl mx-auto space-y-5 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Saved Queries</h1>
-        <p className="text-gray-500 text-sm mt-1">Your bookmarked and favorite queries</p>
+        <h1 className="text-lg font-bold text-[#F8FAFC]">Saved Queries</h1>
+        <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>Your bookmarked and favorite queries</p>
       </div>
 
       {loading ? (
-        <p className="text-gray-400 text-sm">Loading…</p>
+        <div className="flex items-center gap-3 py-8" style={{ color: "#64748B" }}>
+          <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }} />
+          <span className="text-sm">Loading…</span>
+        </div>
       ) : queries.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
-          <BookmarkCheck size={36} className="text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500">No saved queries yet</p>
-          <p className="text-gray-400 text-sm mt-1">Run a query and click &quot;Save Query&quot; to add it here</p>
+        <div className="rounded-lg border py-12 text-center" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
+          <BookmarkCheck size={28} style={{ color: "rgba(148,163,184,0.3)" }} className="mx-auto mb-3" />
+          <p className="text-sm" style={{ color: "#64748B" }}>No saved queries yet</p>
+          <p className="text-xs mt-1" style={{ color: "rgba(148,163,184,0.5)" }}>Run a query and click &quot;Save&quot; to add it here</p>
         </div>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+        <div className="rounded-lg border overflow-hidden" style={{ borderColor: "rgba(148,163,184,0.08)" }}>
           {queries.map((q) => (
-            <div key={q.id}>
-              <div className="flex items-start gap-3 px-5 py-4">
-                {q.is_favorite && <Star size={15} className="text-yellow-400 shrink-0 mt-0.5 fill-yellow-400" />}
+            <div key={q.id} className="border-b last:border-0" style={{ borderColor: "rgba(148,163,184,0.05)" }}>
+              <div className="flex items-start gap-3 px-4 py-3">
+                {q.is_favorite && <Star size={14} style={{ color: "#F59E0B", fill: "#F59E0B" }} className="shrink-0 mt-1" />}
                 <div className="flex-1 min-w-0">
-                  <button
-                    onClick={() => setExpanded(expanded === q.id ? null : q.id)}
-                    className="text-left"
-                  >
-                    <p className="text-sm font-semibold text-gray-800">{q.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">{q.natural_language_query}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{new Date(q.created_at).toLocaleDateString()}</p>
+                  <button onClick={() => setExpanded(expanded === q.id ? null : q.id)} className="text-left w-full">
+                    <p className="text-sm font-semibold text-[#CBD5E1]">{q.title}</p>
+                    <p className="text-xs mt-0.5 truncate" style={{ color: "#64748B" }}>{q.natural_language_query}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "rgba(148,163,184,0.5)" }}>{new Date(q.created_at).toLocaleDateString()}</p>
                   </button>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => router.push(`/query?q=${encodeURIComponent(q.natural_language_query)}`)}
-                    className="p-1.5 rounded hover:bg-blue-50 text-gray-400 hover:text-brand-600 transition-colors"
+                    className="p-1.5 rounded transition-colors"
+                    style={{ color: "#64748B" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "#14B8A6"; e.currentTarget.style.background = "rgba(20,184,166,0.1)" }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "#64748B"; e.currentTarget.style.background = "transparent" }}
                     title="Run again"
                   >
-                    <Play size={15} />
+                    <Play size={14} />
                   </button>
                   <button
                     onClick={() => deleteQuery(q.id)}
-                    className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors"
+                    className="p-1.5 rounded transition-colors"
+                    style={{ color: "#64748B" }}
+                    onMouseEnter={e => { e.currentTarget.style.color = "#EF4444"; e.currentTarget.style.background = "rgba(239,68,68,0.1)" }}
+                    onMouseLeave={e => { e.currentTarget.style.color = "#64748B"; e.currentTarget.style.background = "transparent" }}
                     title="Delete"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
 
               {expanded === q.id && (
-                <div className="px-5 pb-4">
+                <div className="px-4 pb-3">
                   <pre className="sql-block text-xs">{q.generated_sql}</pre>
                 </div>
               )}

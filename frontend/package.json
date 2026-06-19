@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint . --max-warnings 0"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.4",
@@ -16,33 +16,35 @@
     "@radix-ui/react-separator": "^1.1.9",
     "@radix-ui/react-slot": "^1.2.5",
     "@radix-ui/react-toast": "^1.2.16",
+    "@supabase/supabase-js": "^2.49.0",
     "@tanstack/react-table": "^8.17.3",
     "axios": "^1.7.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "highlight.js": "^11.9.0",
     "js-cookie": "^3.0.5",
-    "lucide-react": "^0.383.0",
-    "next": "14.2.3",
-    "react": "^18",
-    "react-dom": "^18",
+    "lucide-react": "^1.21.0",
+    "next": "^16.2.9",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
     "react-hook-form": "^7.51.5",
     "react-hot-toast": "^2.4.1",
-    "recharts": "^2.12.7",
-    "tailwind-merge": "^2.3.0",
-    "zustand": "^4.5.2",
-    "@supabase/supabase-js": "^2.49.0"
+    "recharts": "^3.8.1",
+    "tailwind-merge": "^3.6.0",
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
     "@types/js-cookie": "^3.0.6",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/node": "^26.0.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.19",
-    "eslint": "^8",
-    "eslint-config-next": "14.2.3",
+    "eslint": "^9.26.0",
+    "eslint-config-next": "^16.2.9",
     "postcss": "^8",
-    "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "tailwindcss": "^3.4.19",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^6.0.3"
   }
 }

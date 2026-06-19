@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { authApi } from "@/lib/api"
 import { saveAuth } from "@/lib/auth/session"
 import toast from "react-hot-toast"

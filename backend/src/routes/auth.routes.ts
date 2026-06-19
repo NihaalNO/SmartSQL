@@ -73,13 +73,13 @@ router.post(
 );
 
 // GET /api/auth/me
-router.get("/me", authenticate, asyncHandler(async (req, res) => AuthController.me(req, res)));
+router.get("/me", authenticate, asyncHandler(AuthController.me));
 
   // POST /api/auth/resend-verification-email
   router.post(
     "/resend-verification-email",
     authLimiter,
-    validateBody(schema.forgotPasswordSchema),
+    authenticate,
     asyncHandler(AuthController.resendVerificationEmail)
   );
 

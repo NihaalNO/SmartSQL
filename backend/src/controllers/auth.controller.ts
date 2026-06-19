@@ -7,6 +7,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import type { TokenResponse, UserOut } from "../types/auth.types";
 import * as jwt from "jsonwebtoken";
 import { env } from "../config/env";
+import axios from "axios";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -90,18 +91,14 @@ export async function register(req: Request, res: Response): Promise<void> {
 
   const sb = getSupabase();
 
-  console.log(`[REGISTER] Registration attempt for email: ${email}`);
-
   // Check if email already exists in our users table
   const existingUser = await sb
     .from("users")
     .select("id")
     .eq("email", email)
     .limit(1);
-  console.log(`[REGISTER] SQL users table check: found ${existingUser.data?.length ?? 0} rows`);
 
   if (existingUser.data && existingUser.data.length > 0) {
-    console.log(`[REGISTER] Email found in SQL users table: ${email}`);
     throw ApiError.badRequest("Email already registered. Please try a different email.");
   }
 
@@ -113,15 +110,9 @@ export async function register(req: Request, res: Response): Promise<void> {
     );
     if (!authUserError && authUserData) {
       authUserExists = true;
-      console.log(`[REGISTER] Email found in Supabase Auth: ${email}`);
-    } else {
-      console.log(`[REGISTER] Email not found in Supabase Auth: ${email}`);
     }
   } catch (authCheckError: unknown) {
-    // If we can't check due to permissions or other issues, we'll proceed and let createUser handle it
-    console.warn(
-      `Warning: Could not check if email exists in Supabase Auth: ${String(authCheckError)}`
-    );
+    // Ignore — proceed; createUser will fail if email exists
   }
 
   if (authUserExists) {
@@ -135,26 +126,23 @@ export async function register(req: Request, res: Response): Promise<void> {
     );
   }
 
-  // Create Supabase auth user WITHOUT email confirmation
-  console.log(`[REGISTER] Creating Supabase auth user for email: ${email}`);
+  // Create Supabase auth user with email confirmed to allow immediate sign-in.
+  // Email verification is handled at the application level (via middleware).
   const { data: authData, error: authError } = await sb.auth.admin.createUser({
     email,
     password,
-    email_confirm: false, // Require email verification
+    email_confirm: true,
   });
 
   if (authError || !authData.user) {
-    console.log(`[REGISTER] Failed to create Supabase auth user: ${authError?.message}`);
     throw ApiError.badRequest(authError?.message ?? "Auth creation failed");
   }
 
   const supabaseUid = authData.user.id;
-  console.log(`[REGISTER] Created Supabase auth user with ID: ${supabaseUid}`);
   const resolvedRole = await resolveRole(sb, role ?? "viewer");
 
   try {
     // Insert into users table
-    console.log(`[REGISTER] Inserting user into SQL users table`);
     const { data: userData, error: insertError } = await sb
       .from("users")
       .insert({
@@ -167,7 +155,6 @@ export async function register(req: Request, res: Response): Promise<void> {
       .limit(1);
 
     if (insertError || !userData || userData.length === 0) {
-      console.log(`[REGISTER] Failed to insert user into SQL users table: ${insertError?.message}`);
       throw new Error(insertError?.message ?? "Profile creation failed");
     }
 
@@ -179,8 +166,6 @@ export async function register(req: Request, res: Response): Promise<void> {
       status: string;
       created_at: string;
     };
-
-    console.log(`[REGISTER] Successfully inserted user into SQL users table with ID: ${user.id}`);
 
     // Generate email verification token
     const verificationToken = jwt.sign(
@@ -198,23 +183,40 @@ export async function register(req: Request, res: Response): Promise<void> {
       html: getEmailVerificationTemplate(verificationUrl, user.full_name),
     };
 
-    await sendEmail(emailData);
+    await sendEmail(emailData).catch(() => {});
 
-    console.log(`[REGISTER] Registration successful for email: ${email}. Verification email sent.`);
+    // Auto-login: get a session token for the newly registered user
+    const authClient = getAuthClient();
+    const { data: signInData, error: signInError } =
+      await authClient.auth.signInWithPassword({ email, password });
+
+    if (signInError || !signInData.session) {
+      // If auto-login fails, still return success with message
+      res.status(201).json({
+        message: "Registration successful. Please check your email to verify your account, then log in.",
+        user_id: user.id,
+        email: user.email
+      });
+      return;
+    }
+
+    const roleName = await getRoleName(sb, user.role_id);
+
     res.status(201).json({
-      message: "Registration successful. Please check your email to verify your account.",
+      access_token: signInData.session.access_token,
+      token_type: "bearer",
       user_id: user.id,
-      email: user.email
+      full_name: user.full_name,
+      email: user.email,
+      role: roleName,
+      email_verified: false,
     });
   } catch (err: unknown) {
-    console.log(`[REGISTER] Error during registration process: ${String(err)}`);
     // Best effort: clean up auth user on profile creation failure
     try {
       await sb.auth.admin.deleteUser(supabaseUid);
-      console.log(`[REGISTER] Cleaned up Supabase auth user: ${supabaseUid}`);
     } catch {
       // ignore cleanup errors
-      console.log(`[REGISTER] Warning: Failed to clean up Supabase auth user: ${supabaseUid}`);
     }
     throw err;
   }
@@ -277,6 +279,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     full_name: userApp.full_name,
     email: userApp.email,
     role: roleName,
+    email_verified: true,
   };
 
   res.json(response);
@@ -287,7 +290,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function loginWithGoogle(req: Request, res: Response): Promise<void> {
-  const { code } = req.body as { code: string };
+  const { code, redirect_uri } = req.body as { code: string; redirect_uri?: string };
 
   if (!code) {
     throw ApiError.badRequest("Authorization code is required");
@@ -296,8 +299,47 @@ export async function loginWithGoogle(req: Request, res: Response): Promise<void
   const sb = getAuthClient(); // Use anon client for OAuth code exchange
 
   try {
-    // Exchange the code for a session
-    const { data: sessionData, error: exchangeError } = await sb.auth.exchangeCodeForSession(code);
+    let sessionData: Awaited<ReturnType<typeof sb.auth.exchangeCodeForSession>>["data"];
+    let exchangeError: Awaited<ReturnType<typeof sb.auth.exchangeCodeForSession>>["error"] | null = null;
+
+    if (redirect_uri) {
+      if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
+        throw ApiError.badRequest("Google sign in is not configured");
+      }
+
+      const googleTokenRes = await axios.post(
+        "https://oauth2.googleapis.com/token",
+        new URLSearchParams({
+          code,
+          client_id: env.GOOGLE_CLIENT_ID,
+          client_secret: env.GOOGLE_CLIENT_SECRET,
+          redirect_uri,
+          grant_type: "authorization_code",
+        }),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+
+      const idToken = googleTokenRes.data?.id_token as string | undefined;
+      if (!idToken) {
+        throw ApiError.unauthorized("Google authentication failed");
+      }
+
+      const signInResult = await sb.auth.signInWithIdToken({
+        provider: "google",
+        token: idToken,
+      });
+
+      sessionData = signInResult.data;
+      exchangeError = signInResult.error;
+    } else {
+      const exchangeResult = await sb.auth.exchangeCodeForSession(code);
+      sessionData = exchangeResult.data;
+      exchangeError = exchangeResult.error;
+    }
 
     if (exchangeError || !sessionData.session) {
       throw ApiError.unauthorized(exchangeError?.message ?? "Failed to exchange code for session");
@@ -322,16 +364,18 @@ export async function loginWithGoogle(req: Request, res: Response): Promise<void
 
     if (userError || !userData || userData.length === 0) {
       // New user - create profile
-      console.log(`[GOOGLE_LOGIN] New user detected: ${user.email}`);
 
-      // Get default role (viewer)
+      // Get default role (analyst — matches register page default)
       const { data: roleData } = await sb
         .from("roles")
         .select("id")
-        .eq("name", "viewer")
+        .eq("name", "analyst")
         .limit(1);
 
-      const roleId = roleData?.[0]?.id ?? 1; // Default to viewer role if not found
+      if (!roleData || roleData.length === 0) {
+        throw new Error('Default role (analyst) not configured');
+      }
+      const roleId = roleData[0].id;
 
       // Insert new user
       const { data: newUserData, error: insertError } = await sb
@@ -375,11 +419,11 @@ export async function loginWithGoogle(req: Request, res: Response): Promise<void
       full_name: appUser.full_name,
       email: appUser.email,
       role: roleName,
+      email_verified: true,
     };
 
     res.json(response);
   } catch (error) {
-    console.error(`[GOOGLE_LOGIN] Error:`, error);
     if (error instanceof ApiError) {
       throw error;
     }
@@ -447,6 +491,7 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     full_name: user.full_name,
     email: user.email,
     role: "admin",
+    email_verified: true,
   };
 
   res.json(response);
@@ -476,10 +521,10 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 
     const sb = getSupabase();
 
-    // Check if user exists
+    // Check if user exists and get their supabase_uid
     const { data: userData, error: userError } = await sb
       .from("users")
-      .select("id, email")
+      .select("id, supabase_uid")
       .eq("id", payload.userId)
       .limit(1);
 
@@ -487,13 +532,17 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
       throw ApiError.notFound("User not found");
     }
 
-    // Update the user's email as confirmed in Supabase
-    // Note: In a real app, you might want to update the email_confirmed_at field in Supabase auth.users
-    // For now, we'll just update our users table to mark email as verified
-    // You could add an email_verified column to your users table
+    const user = userData[0] as { id: number; supabase_uid: string };
 
-    // For now, we'll just respond that email is verified
-    // In a production app, you'd want to actually mark the email as verified in Supabase
+    // Actually confirm the user's email in Supabase Auth
+    const { error: updateError } = await sb.auth.admin.updateUserById(
+      user.supabase_uid,
+      { email_confirm: true }
+    );
+
+    if (updateError) {
+      throw ApiError.badRequest(updateError.message);
+    }
 
     res.json({
       message: "Email verified successfully. You can now log in."
@@ -511,7 +560,9 @@ export async function verifyEmail(req: Request, res: Response): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function resendVerificationEmail(req: Request, res: Response): Promise<void> {
-  const { email } = req.body as { email: string };
+  if (!req.user) {
+    throw ApiError.unauthorized();
+  }
 
   const sb = getSupabase();
 
@@ -519,25 +570,17 @@ export async function resendVerificationEmail(req: Request, res: Response): Prom
   const { data: userData, error: userError } = await sb
     .from("users")
     .select("id, email, full_name, status")
-    .eq("email", email)
+    .eq("id", req.user.id)
     .limit(1);
 
-  // Always return the same message to prevent email enumeration
   if (userError || !userData || userData.length === 0) {
-    res.json({
-      message: "If an account with that email exists, we've sent a verification email."
-    });
-    return;
+    throw ApiError.notFound("User not found");
   }
 
-  const user = userData[0];
+  const user = userData[0] as { id: number; email: string; full_name: string; status: string };
 
-  // Check if account is active
   if (user.status !== "active") {
-    res.json({
-      message: "If an account with that email exists, we've sent a verification email."
-    });
-    return;
+    throw ApiError.forbidden("Account is inactive");
   }
 
   // Generate email verification token
@@ -559,7 +602,7 @@ export async function resendVerificationEmail(req: Request, res: Response): Prom
   await sendEmail(emailData);
 
   res.json({
-    message: "If an account with that email exists, we've sent a verification email."
+    message: "Verification email sent. Please check your inbox."
   });
 }
 
@@ -634,6 +677,10 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
       throw ApiError.badRequest("Invalid token type");
     }
 
+    if (!payload.userId || !payload.email) {
+      throw ApiError.badRequest("Invalid token: missing user identifier");
+    }
+
     // Validate password strength
     if (password.length < 8) {
       throw ApiError.badRequest("Password must be at least 8 characters long");
@@ -659,10 +706,21 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
       throw ApiError.badRequest("Password must contain at least one special character");
     }
 
-    // Update password in Supabase Auth
-    const authClient = getAuthClient();
-    const { error: updateError } = await authClient.auth.admin.updateUserById(
-      payload.userId.toString(),
+    // Get user to obtain supabase UID
+    const sb = getSupabase();
+    const { data: userData, error: userError } = await sb
+      .from("users")
+      .select("supabase_uid")
+      .eq("id", payload.userId)
+      .limit(1);
+
+    if (userError || !userData || userData.length === 0) {
+      throw ApiError.notFound("User not found");
+    }
+
+    // Update password in Supabase Auth using service role
+    const { error: updateError } = await sb.auth.admin.updateUserById(
+      userData[0].supabase_uid,
       { password }
     );
 
@@ -717,9 +775,21 @@ export async function tokenForm(req: Request, res: Response): Promise<void> {
 // Me
 // ---------------------------------------------------------------------------
 
-export function me(req: Request, res: Response): void {
+export async function me(req: Request, res: Response): Promise<void> {
   if (!req.user) {
     throw ApiError.unauthorized();
+  }
+
+  let emailVerified = false;
+
+  try {
+    const sb = getSupabase();
+    const { data: authUser } = await sb.auth.admin.getUserById(
+      req.user.supabaseUid
+    );
+    emailVerified = !!authUser?.user?.email_confirmed_at;
+  } catch {
+    // Gracefully fall back to false if we can't check
   }
 
   const userOut: UserOut = {
@@ -728,6 +798,7 @@ export function me(req: Request, res: Response): void {
     email: req.user.email,
     role: req.user.roleName,
     status: req.user.status,
+    email_verified: emailVerified,
     created_at: req.user.createdAt,
   };
 

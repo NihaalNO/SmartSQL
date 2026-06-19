@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { authApi } from "@/lib/api"
 import { saveAuth } from "@/lib/auth/session"
+import { getGoogleRedirectUri } from "@/lib/auth/google"
+import { supabase } from "@/lib/supabase"
 import toast from "react-hot-toast"
 
 export const dynamic = 'force-dynamic'
@@ -11,102 +13,114 @@ export const dynamic = 'force-dynamic'
 export default function AuthCallbackPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [completed, setCompleted] = useState(false)
+  const [message, setMessage] = useState("Processing authentication...")
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
         const urlParams = new URLSearchParams(window.location.search)
-        const accessToken = urlParams.get('access_token')
-        const refreshToken = urlParams.get('refresh_token')
 
-        // If we have tokens directly in the URL (implicit flow)
-        if (accessToken) {
-          // Get user data using the access token
+        // ── Path 1: Code from custom Google OAuth (startSmartSqlGoogleAuth) ──
+        const code = urlParams.get('code')
+        if (code) {
+          const res = await authApi.loginWithGoogle({
+            code,
+            redirect_uri: getGoogleRedirectUri(),
+          })
+          saveAuth(res)
+          const redirectUrl = urlParams.get('redirect_to') || '/dashboard'
+          router.push(redirectUrl)
+          return
+        }
+
+        // ── Path 2: Session from Supabase OAuth (hash fragment) ──
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.access_token) {
+          // Save the token so authApi.me() can use it
+          saveAuth({
+            user_id: 0,
+            full_name: "",
+            email: session.user?.email || "",
+            role: "",
+            access_token: session.access_token,
+            email_verified: !!session.user?.email_confirmed_at,
+          })
+
+          // Fetch full user profile from our backend
           const userData = await authApi.me()
-
-          // Create auth user object
-          const authUser = {
+          saveAuth({
             user_id: userData.id,
             full_name: userData.full_name,
             email: userData.email,
             role: userData.role,
-            access_token: accessToken,
-            email_verified: true // Assuming Google OAuth provides verified email
-          }
+            access_token: session.access_token,
+            email_verified: !!session.user?.email_confirmed_at,
+          })
 
-          saveAuth(authUser)
-
-          // Redirect to intended destination
           const redirectUrl = urlParams.get('redirect_to') || '/dashboard'
           router.push(redirectUrl)
           return
         }
 
-        // Otherwise, check if we need to exchange code for tokens
-        const code = urlParams.get('code')
-        if (code) {
-          // Exchange code for session
-          const res = await authApi.loginWithGoogle({ code })
-          saveAuth(res)
-
-          // Redirect to intended destination
-          const redirectUrl = urlParams.get('redirect_to') || '/dashboard'
-          router.push(redirectUrl)
-          return
-        }
-
-        // If neither tokens nor code, check for error
+        // ── Path 3: Error parameter ──
         const error = urlParams.get('error')
         if (error) {
           throw new Error(`Authentication failed: ${error}`)
         }
 
-        // Fallback: try to get current user
-        const userData = await authApi.me()
-        const authUser = {
-          user_id: userData.id,
-          full_name: userData.full_name,
-          email: userData.email,
-          role: userData.role,
-          access_token: "", // Would need to be obtained from session
-          email_verified: true
+        // ── Path 4: Fallback — try fetching current session ──
+        setMessage("Completing sign-in...")
+        const fallbackSession = await supabase.auth.getSession()
+        if (fallbackSession.data?.session?.access_token) {
+          const s = fallbackSession.data.session
+          saveAuth({
+            user_id: 0,
+            full_name: "",
+            email: s.user?.email || "",
+            role: "",
+            access_token: s.access_token,
+            email_verified: !!s.user?.email_confirmed_at,
+          })
+
+          const userData = await authApi.me()
+          saveAuth({
+            user_id: userData.id,
+            full_name: userData.full_name,
+            email: userData.email,
+            role: userData.role,
+            access_token: s.access_token,
+            email_verified: !!s.user?.email_confirmed_at,
+          })
+
+          router.push('/dashboard')
+          return
         }
 
-        saveAuth(authUser)
-        router.push('/dashboard')
+        // ── No session found ──
+        throw new Error("No authentication session found")
       } catch (err: any) {
         console.error('Auth callback error:', err)
-        toast.error('Authentication failed. Please try again.')
+        toast.error(err?.response?.data?.detail || 'Authentication failed. Please try again.')
         router.push('/login')
       } finally {
         setLoading(false)
-        setCompleted(true)
       }
     }
 
-    handleCallback()
+    // Small delay to let Supabase client recover session from URL hash
+    const timer = setTimeout(() => handleCallback(), 300)
+    return () => clearTimeout(timer)
   }, [router])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Processing authentication...</h2>
-          <p className="text-gray-600">
-            We're processing your Google sign-in. This should only take a moment.
-          </p>
-          <div className="flex items-center justify-center mt-6">
-            <div className="w-5 h-5 rounded-full border-2 border-t-transparent border-b-gray-400 animate-spin" />
-          </div>
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "#050816" }}>
+      <div className="text-center py-12 animate-fade-in-up">
+        <div className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(20,184,166,0.1)" }}>
+          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }} />
         </div>
+        <h2 className="text-lg font-bold mb-2" style={{ color: "#F8FAFC" }}>{message}</h2>
+        <p className="text-sm" style={{ color: "#64748B" }}>This should only take a moment.</p>
       </div>
-    )
-  }
-
-  if (completed) {
-    return null // Redirect already happened in useEffect
-  }
-
-  return null
+    </div>
+  )
 }

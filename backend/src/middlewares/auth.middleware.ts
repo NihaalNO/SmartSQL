@@ -1,6 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import * as jwt from "jsonwebtoken";
-import { env } from "../config/env";
 import { getSupabase } from "../config/supabase";
 import { ApiError } from "../utils/ApiError";
 
@@ -30,31 +28,13 @@ declare global {
 }
 
 // ---------------------------------------------------------------------------
-// Token decoding
-// ---------------------------------------------------------------------------
-
-export function decodeToken(token: string): Record<string, unknown> {
-  try {
-    return jwt.verify(token, env.SUPABASE_JWT_SECRET, {
-      algorithms: ["HS256"],
-      // Supabase tokens use 'authenticated' audience, not a custom one
-      // skip audience check as in the original Python code
-      audience: undefined,
-      issuer: undefined,
-      // For Supabase JWT, we skip audience verification
-    }) as Record<string, unknown>;
-  } catch {
-    throw new ApiError(401, "Invalid or expired token");
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Authentication middlewares
 // ---------------------------------------------------------------------------
 
 /**
  * Verifies the Authorization: Bearer <token> header,
- * decodes the token, fetches the user from Supabase,
+ * verifies the token with Supabase,
+ * fetches the user from our database,
  * and attaches the user to req.user.
  */
 export async function authenticate(
@@ -68,61 +48,157 @@ export async function authenticate(
   }
 
   const token = authHeader.slice(7); // Remove "Bearer "
-  let payload: Record<string, unknown>;
+  // [TOKEN LOGGING REMOVED]
 
   try {
-    payload = jwt.verify(token, env.SUPABASE_JWT_SECRET, {
-      algorithms: ["HS256"],
-    }) as Record<string, unknown>;
-  } catch {
+    const sb = getSupabase();
+    const { data: { user }, error } = await sb.auth.getUser(token);
+
+    if (error || !user) {
+      return next(new ApiError(401, "Invalid or expired token"));
+    }
+
+
+    // Fetch user from our database using supabase_uid
+    const userRes = await sb
+      .from("users")
+      .select("id, supabase_uid, full_name, email, status, created_at, role_id")
+      .eq("supabase_uid", user.id)
+      .single();
+
+    // If user doesn't exist in our database by supabase_uid, try to create or link them
+    if (userRes.error || !userRes.data) {
+      const email = user.email ?? '';
+      const emailParts = email.split('@');
+      const fullName = user.user_metadata?.full_name ||
+                      (emailParts.length > 0 ? emailParts[0] : 'Unknown User') ||
+                      'Unknown User';
+
+      // First check if user exists by email (e.g., from prior email registration)
+      const { data: existingByEmail } = await sb
+        .from("users")
+        .select("id, supabase_uid, full_name, email, status, role_id")
+        .eq("email", email)
+        .limit(1);
+
+      if (existingByEmail && existingByEmail.length > 0) {
+        // Link the existing user to this OAuth identity by updating supabase_uid
+        const existing = existingByEmail[0] as {
+          id: number; supabase_uid?: string; full_name: string;
+          email: string; status: string; role_id: number;
+        };
+
+        if (existing.status !== "active") {
+          return next(new ApiError(401, "Account is inactive"));
+        }
+
+        // Update supabase_uid to link OAuth identity
+        await sb.from("users").update({ supabase_uid: user.id }).eq("id", existing.id);
+
+        // Fetch role name
+        const roleRes = await sb.from("roles").select("name").eq("id", existing.role_id).single();
+        const roleName = roleRes.data?.name ?? "viewer";
+
+        req.user = {
+          id: existing.id,
+          supabaseUid: user.id,
+          fullName: existing.full_name,
+          email: existing.email,
+          status: existing.status,
+          roleName: roleName as string,
+          createdAt: existing.id.toString(),
+        };
+        next();
+        return;
+      }
+
+      // Fetch default role id (analyst — matches register page default)
+      const { data: roleData, error: roleError } = await sb
+        .from("roles")
+        .select("id")
+        .eq("name", "analyst")
+        .single();
+      if (roleError || !roleData) {
+        return next(new ApiError(500, "Default role (analyst) not configured"));
+      }
+      const defaultRoleId = roleData.id;
+
+      // Create new user in our database
+      const newUserRes = await sb
+        .from("users")
+        .insert({
+          supabase_uid: user.id,
+          email: email,
+          full_name: fullName,
+          status: 'active',
+          role_id: defaultRoleId
+        })
+        .select()
+        .single();
+
+      if (newUserRes.error || !newUserRes.data) {
+        return next(new ApiError(500, "Failed to create user"));
+      }
+
+      const dbUser = newUserRes.data as {
+        id: number;
+        supabase_uid: string;
+        full_name: string;
+        email: string;
+        status: string;
+        created_at: string;
+        role_id: number;
+      };
+
+      const roleRes = await sb.from("roles").select("name").eq("id", dbUser.role_id).single();
+      const roleName = roleRes.data?.name ?? "viewer";
+
+      req.user = {
+        id: dbUser.id,
+        supabaseUid: dbUser.supabase_uid,
+        fullName: dbUser.full_name,
+        email: dbUser.email,
+        status: dbUser.status,
+        roleName: roleName as string,
+        createdAt: dbUser.created_at,
+      };
+
+      next();
+      return;
+    }
+
+    const dbUser = userRes.data as {
+      id: number;
+      supabase_uid: string;
+      full_name: string;
+      email: string;
+      status: string;
+      created_at: string;
+      role_id: number;
+    };
+
+    if (dbUser.status !== "active") {
+      return next(new ApiError(401, "Account is inactive"));
+    }
+
+    // Fetch role name from our roles table
+    const roleRes = await sb.from("roles").select("name").eq("id", dbUser.role_id).single();
+    const roleName = roleRes.data?.name ?? "viewer";
+
+    req.user = {
+      id: dbUser.id,
+      supabaseUid: dbUser.supabase_uid,
+      fullName: dbUser.full_name,
+      email: dbUser.email,
+      status: dbUser.status,
+      roleName: roleName as string,
+      createdAt: dbUser.created_at,
+    };
+
+    next();
+  } catch (error) {
     return next(new ApiError(401, "Invalid or expired token"));
   }
-
-  const supabaseUid = payload.sub as string | undefined;
-  if (!supabaseUid) {
-    return next(new ApiError(401, "Invalid token payload"));
-  }
-
-  const sb = getSupabase();
-  const userRes = await sb
-    .from("users")
-    .select("id, supabase_uid, full_name, email, status, created_at, role_id")
-    .eq("supabase_uid", supabaseUid)
-    .single();
-
-  if (userRes.error || !userRes.data) {
-    return next(new ApiError(401, "User not found"));
-  }
-
-  const data = userRes.data as {
-    id: number;
-    supabase_uid: string;
-    full_name: string;
-    email: string;
-    status: string;
-    created_at: string;
-    role_id: number;
-  };
-
-  if (data.status !== "active") {
-    return next(new ApiError(401, "Account is inactive"));
-  }
-
-  // Fetch role name
-  const roleRes = await sb.from("roles").select("name").eq("id", data.role_id).single();
-  const roleName = roleRes.data?.name ?? "viewer";
-
-  req.user = {
-    id: data.id,
-    supabaseUid: data.supabase_uid,
-    fullName: data.full_name,
-    email: data.email,
-    status: data.status,
-    roleName: roleName as string,
-    createdAt: data.created_at,
-  };
-
-  next();
 }
 
 /**
@@ -156,42 +232,44 @@ export async function optionalAuth(
 
   const token = authHeader.slice(7);
   try {
-    const payload = jwt.verify(token, env.SUPABASE_JWT_SECRET, {
-      algorithms: ["HS256"],
-    }) as Record<string, unknown>;
-    const supabaseUid = payload.sub as string | undefined;
-    if (supabaseUid) {
-      const sb = getSupabase();
-      const userRes = await sb
-        .from("users")
-        .select("id, supabase_uid, full_name, email, status, created_at, role_id")
-        .eq("supabase_uid", supabaseUid)
-        .single();
+    const sb = getSupabase();
+    const { data: { user }, error } = await sb.auth.getUser(token);
 
-      if (userRes.data) {
-        const data = userRes.data as {
-          id: number;
-          supabase_uid: string;
-          full_name: string;
-          email: string;
-          status: string;
-          created_at: string;
-          role_id: number;
-        };
-
-        const roleRes = await sb.from("roles").select("name").eq("id", data.role_id).single();
-        req.user = {
-          id: data.id,
-          supabaseUid: data.supabase_uid,
-          fullName: data.full_name,
-          email: data.email,
-          status: data.status,
-          roleName: (roleRes.data?.name ?? "viewer") as string,
-          createdAt: data.created_at,
-        };
-      }
+    if (error || !user) {
+      // Invalid token — proceed without user
+      return next();
     }
-  } catch {
+
+    // Fetch user from our database using supabase_uid
+    const userRes = await sb
+      .from("users")
+      .select("id, supabase_uid, full_name, email, status, created_at, role_id")
+      .eq("supabase_uid", user.id)
+      .single();
+
+    if (userRes.data) {
+      const data = userRes.data as {
+        id: number;
+        supabase_uid: string;
+        full_name: string;
+        email: string;
+        status: string;
+        created_at: string;
+        role_id: number;
+      };
+
+      const roleRes = await sb.from("roles").select("name").eq("id", data.role_id).single();
+      req.user = {
+        id: data.id,
+        supabaseUid: data.supabase_uid,
+        fullName: data.full_name,
+        email: data.email,
+        status: data.status,
+        roleName: (roleRes.data?.name ?? "viewer") as string,
+        createdAt: data.created_at,
+      };
+    }
+  } catch (error) {
     // Invalid token — proceed without user
   }
   next();

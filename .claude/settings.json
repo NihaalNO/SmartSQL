@@ -93,7 +93,8 @@
       "Bash(git commit -m 'feat\\(frontend\\): integrate Shadcn/UI components and implement page redirection logic *)",
       "Bash(mkdir -p backend/src/services)",
       "Bash(xargs grep -l \"oauth\\\\|callback\\\\|OAuth\\\\|Callback\")",
-      "Bash(xgrep -l supabase)"
+      "Bash(xgrep -l supabase)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\odath\\AppData\\Roaming\\Python\\Python313\\site-packages\\uvicorn",
@@ -102,5 +103,6 @@
       "D:\\SmartSQL\\frontend\\frontend",
       "D:\\SmartSQL\\backend\\backend\\src"
     ]
-  }
+  },
+  "CLAUDE_CODE_MAX_OUTPUT_TOKENS": 64000
 }

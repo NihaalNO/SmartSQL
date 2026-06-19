@@ -42,4 +42,5 @@ export const resetPasswordSchema = z.object({
 
 export const googleLoginSchema = z.object({
   code: z.string().min(1, "Authorization code is required"),
+  redirect_uri: z.string().url("redirect_uri must be a valid URL").optional(),
 });

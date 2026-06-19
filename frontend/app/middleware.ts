@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
 
   // Define moderator/admin paths
   const moderatorPaths = [
-    '/moderator'
+    '/moderator/dashboard'
   ]
 
   // Check if path is protected
@@ -60,7 +60,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check email verification for protected paths (if authenticated)
-  if (isProtectedPath && token) {
+  // Allow /dashboard even when unverified — dashboard can show its own banner
+  if (isProtectedPath && token && pathname !== '/dashboard') {
     try {
       // Call our auth/me endpoint to get user data including email verification status
       const authResp = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/auth/me`, {

@@ -7,7 +7,7 @@ import {
 } from "recharts"
 import { BarChart3, TrendingUp, PieChart as PieIcon, Activity } from "lucide-react"
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"]
+const COLORS = ["#14B8A6", "#22C55E", "#60A5FA", "#F59E0B", "#EF4444", "#22D3EE", "#8B5CF6"]
 
 type ChartType = "bar" | "line" | "pie" | "area"
 
@@ -17,17 +17,14 @@ interface Props {
 }
 
 const CHART_ICONS: Record<ChartType, React.ReactNode> = {
-  bar: <BarChart3 size={14} />,
-  line: <TrendingUp size={14} />,
-  pie: <PieIcon size={14} />,
-  area: <Activity size={14} />,
+  bar: <BarChart3 size={13} />,
+  line: <TrendingUp size={13} />,
+  pie: <PieIcon size={13} />,
+  area: <Activity size={13} />,
 }
 
 function pickAxes(columns: string[]) {
-  const numeric = columns.filter((c, _, arr) => {
-    // heuristic: pick columns that look numeric
-    return c.match(/count|total|sum|avg|amount|value|num|qty|score|rate|id/i)
-  })
+  const numeric = columns.filter((c) => c.match(/count|total|sum|avg|amount|value|num|qty|score|rate|id/i))
   const label = columns.find((c) => !numeric.includes(c)) || columns[0]
   const value = numeric[0] || columns[1] || columns[0]
   return { label, value }
@@ -45,17 +42,24 @@ export default function ChartView({ columns, rows }: Props) {
   }))
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-700">Chart View</h3>
-        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+    <div className="rounded-lg border overflow-hidden" style={{
+      borderColor: "rgba(148,163,184,0.1)",
+      background: "rgba(255,255,255,0.02)",
+    }}>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: "rgba(148,163,184,0.06)" }}>
+        <span className="text-sm font-medium text-[#CBD5E1]">Chart View</span>
+        <div className="flex gap-0.5 rounded-md p-0.5" style={{ background: "rgba(0,0,0,0.2)" }}>
           {(["bar", "line", "area", "pie"] as ChartType[]).map((t) => (
             <button
               key={t}
               onClick={() => setChartType(t)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                chartType === t ? "bg-white shadow text-brand-600" : "text-gray-500 hover:text-gray-700"
-              }`}
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+              style={{
+                background: chartType === t ? "rgba(20,184,166,0.15)" : "transparent",
+                color: chartType === t ? "#14B8A6" : "#64748B",
+              }}
+              onMouseEnter={e => { if (chartType !== t) e.currentTarget.style.color = "#CBD5E1" }}
+              onMouseLeave={e => { if (chartType !== t) e.currentTarget.style.color = "#64748B" }}
             >
               {CHART_ICONS[t]}
               {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -64,49 +68,50 @@ export default function ChartView({ columns, rows }: Props) {
         </div>
       </div>
 
-      <div className="h-72">
-        <ResponsiveContainer width="100%" height="100%">
-          {chartType === "bar" ? (
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          ) : chartType === "line" ? (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} />
-            </LineChart>
-          ) : chartType === "area" ? (
-            <AreaChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Area type="monotone" dataKey="value" stroke="#3b82f6" fill="#dbeafe" strokeWidth={2} />
-            </AreaChart>
-          ) : (
-            <PieChart>
-              <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={100} label>
-                {data.map((_, idx) => (
-                  <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          )}
-        </ResponsiveContainer>
+      <div className="p-4">
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            {chartType === "bar" ? (
+              <BarChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.06)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
+                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
+                <Bar dataKey="value" fill="#14B8A6" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            ) : chartType === "line" ? (
+              <LineChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.06)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
+                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
+                <Line type="monotone" dataKey="value" stroke="#14B8A6" strokeWidth={2} dot={false} />
+              </LineChart>
+            ) : chartType === "area" ? (
+              <AreaChart data={data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.06)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} />
+                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
+                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="value" stroke="#14B8A6" fill="#14B8A6" fillOpacity={0.1} strokeWidth={2} />
+              </AreaChart>
+            ) : (
+              <PieChart>
+                <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={{ fill: "#64748B", fontSize: 10 }}>
+                  {data.map((_, idx) => (
+                    <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
+                <Legend wrapperStyle={{ color: "#64748B", fontSize: "11px" }} />
+              </PieChart>
+            )}
+          </ResponsiveContainer>
+        </div>
+        <p className="text-xs mt-2" style={{ color: "#64748B" }}>
+          Showing <span style={{ color: "#CBD5E1" }}>{label}</span> vs <span style={{ color: "#CBD5E1" }}>{value}</span> (up to 50 rows)
+        </p>
       </div>
-
-      <p className="text-xs text-gray-400 mt-2">
-        Showing <strong>{label}</strong> vs <strong>{value}</strong> (up to 50 rows)
-      </p>
     </div>
   )
 }

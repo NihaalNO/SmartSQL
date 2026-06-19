@@ -1,3 +1,5 @@
+import Cookies from "js-cookie"
+
 /**
  * Moderator panel auth helpers — stored separately from the main app session
  * so admin panel login/logout never affects regular user sessions.
@@ -22,6 +24,11 @@ export function saveModAuth(data: {
   role:         string
 }) {
   if (typeof window === "undefined") return
+  Cookies.set(MOD_TOKEN_KEY, data.access_token, {
+    expires: 1,
+    path: "/",
+    sameSite: "lax"
+  })
   sessionStorage.setItem(MOD_TOKEN_KEY, data.access_token)
   sessionStorage.setItem(MOD_USER_KEY, JSON.stringify({
     user_id:   data.user_id,
@@ -54,6 +61,7 @@ export function isModLoggedIn(): boolean {
 
 export function modLogout() {
   if (typeof window === "undefined") return
+  Cookies.remove(MOD_TOKEN_KEY, { path: "/" })
   sessionStorage.removeItem(MOD_TOKEN_KEY)
   sessionStorage.removeItem(MOD_USER_KEY)
 }

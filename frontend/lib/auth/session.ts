@@ -88,6 +88,11 @@ export function saveModAuth(data: {
   if (typeof window === 'undefined') return
 
   try {
+    Cookies.set(MOD_TOKEN_KEY, data.access_token, {
+      expires: 1,
+      path: '/',
+      sameSite: 'lax'
+    })
     sessionStorage.setItem(MOD_TOKEN_KEY, data.access_token)
     sessionStorage.setItem(MOD_USER_KEY, JSON.stringify({
       user_id: data.user_id,
@@ -119,6 +124,7 @@ export function getModToken() {
 
 export function clearModAuth() {
   if (typeof window === 'undefined') return
+  Cookies.remove(MOD_TOKEN_KEY, { path: '/' })
   sessionStorage.removeItem(MOD_TOKEN_KEY)
   sessionStorage.removeItem(MOD_USER_KEY)
 }

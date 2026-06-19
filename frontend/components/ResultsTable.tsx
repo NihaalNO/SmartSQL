@@ -9,8 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Button } from "@/components/ui/button"
-
 import {
   useReactTable,
   getCoreRowModel,
@@ -54,169 +52,121 @@ export default function ResultsTable({
 
   const downloadCSV = () => {
     const header = columns.join(",")
-
     const body = rows
-      .map((r) =>
-        columns
-          .map((c) => JSON.stringify(r[c] ?? ""))
-          .join(",")
-      )
+      .map((r) => columns.map((c) => JSON.stringify(r[c] ?? "")).join(","))
       .join("\n")
-
-    const blob = new Blob([header + "\n" + body], {
-      type: "text/csv",
-    })
-
+    const blob = new Blob([header + "\n" + body], { type: "text/csv" })
     const url = URL.createObjectURL(blob)
-
     const a = document.createElement("a")
     a.href = url
     a.download = "results.csv"
     a.click()
-
     URL.revokeObjectURL(url)
   }
 
-  const currentPage =
-    tanstackTable.getState().pagination.pageIndex + 1
-
+  const currentPage = tanstackTable.getState().pagination.pageIndex + 1
   const totalPages = tanstackTable.getPageCount()
 
   return (
-    <div className="rounded-xl border border-outline-variant overflow-hidden shadow-sm bg-surface-container-lowest">
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-surface-container border-b border-outline-variant/40">
+    <div className="rounded-lg overflow-hidden border" style={{
+      borderColor: "rgba(148,163,184,0.1)",
+      background: "rgba(255,255,255,0.02)",
+    }}>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: "rgba(148,163,184,0.06) "}}>
         <div className="flex items-center gap-3">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#004ac6"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 3h18v4H3z" />
-            <path d="M3 10h18v4H3z" />
-            <path d="M3 17h18v4H3z" />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" strokeWidth="1.5">
+            <path d="M3 3h18v4H3z" /><path d="M3 10h18v4H3z" /><path d="M3 17h18v4H3z" />
           </svg>
-
-          <span className="text-title-sm text-on-surface">
-            Results
-          </span>
-
-          <span className="text-label-sm text-on-surface-variant">
-            {rowCount.toLocaleString()} row
-            {rowCount !== 1 ? "s" : ""} ·{" "}
-            {executionTimeMs}ms
+          <span className="text-sm font-medium text-[#CBD5E1]">Results</span>
+          <span className="text-xs" style={{ color: "#64748B" }}>
+            {rowCount.toLocaleString()} row{rowCount !== 1 ? "s" : ""} · {executionTimeMs}ms
           </span>
         </div>
-
         <button
           onClick={downloadCSV}
-          className="flex items-center gap-1.5 text-label-sm text-on-surface-variant hover:text-primary px-3 py-1.5 rounded-full border border-outline-variant hover:border-primary/40 transition-colors bg-surface-container-lowest"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-all"
+          style={{ borderColor: "rgba(148,163,184,0.1)", color: "#64748B" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.2)"; e.currentTarget.style.color = "#CBD5E1" }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.1)"; e.currentTarget.style.color = "#64748B" }}
         >
-          <Download size={13} />
+          <Download size={12} />
           Export CSV
         </button>
       </div>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             {tanstackTable.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
+              <TableRow key={headerGroup.id} style={{ borderColor: "rgba(148,163,184,0.06)" }}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-left text-label-sm text-on-surface-variant uppercase tracking-wide whitespace-nowrap"
+                    className="text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap px-4 py-3"
+                    style={{ color: "#64748B" }}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
-
           <TableBody>
-            {tanstackTable.getRowModel().rows.map(
-              (row, index) => {
-                const isEven = index % 2 === 0
-
-                return (
-                  <TableRow
-                    key={row.id}
-                    className={`
-                      hover:bg-surface-container/50
-                      transition-colors
-                      ${
-                        isEven
-                          ? "bg-surface-container-low/50"
-                          : ""
-                      }
-                    `}
-                  >
-                    {row.getVisibleCells().map((cell) => {
-                      const value = cell.getValue()
-
-                      return (
-                        <TableCell
-                          key={cell.id}
-                          className="px-4 py-2.5 text-body-md text-on-surface max-w-xs truncate"
-                        >
-                          {value === null ||
-                          value === undefined ? (
-                            <span className="text-on-surface-variant/40 italic text-label-sm">
-                              null
-                            </span>
-                          ) : (
-                            String(value)
-                          )}
-                        </TableCell>
-                      )
-                    })}
-                  </TableRow>
-                )
-              }
-            )}
+            {tanstackTable.getRowModel().rows.map((row, index) => {
+              const isEven = index % 2 === 0
+              return (
+                <TableRow
+                  key={row.id}
+                  style={{ borderColor: "rgba(148,163,184,0.04)" }}
+                  className="transition-colors"
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(20,184,166,0.04)"}
+                  onMouseLeave={e => e.currentTarget.style.background = isEven ? "rgba(255,255,255,0.015)" : "transparent"}
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const value = cell.getValue()
+                    return (
+                      <TableCell key={cell.id} className="px-4 py-2.5 text-sm max-w-xs truncate" style={{ color: "#CBD5E1" }}>
+                        {value === null || value === undefined ? (
+                          <span className="italic" style={{ color: "rgba(148,163,184,0.3)" }}>null</span>
+                        ) : (
+                          String(value)
+                        )}
+                      </TableCell>
+                    )
+                  })}
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-5 py-3 border-t border-outline-variant/30 bg-surface-container-low">
-          <span className="text-label-sm text-on-surface-variant">
+        <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{ borderColor: "rgba(148,163,184,0.06)" }}>
+          <span className="text-xs" style={{ color: "#64748B" }}>
             Page {currentPage} of {totalPages}
           </span>
-
           <div className="flex gap-1">
-            <Button
+            <button
               onClick={() => tanstackTable.previousPage()}
               disabled={!tanstackTable.getCanPreviousPage()}
-              variant="ghost"
-              size="icon"
-              className="p-1.5"
+              className="p-1.5 rounded transition-colors disabled:opacity-30"
+              style={{ color: "#64748B" }}
+              onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}
             >
-              <ChevronLeft size={15} />
-            </Button>
-
-            <Button
+              <ChevronLeft size={14} />
+            </button>
+            <button
               onClick={() => tanstackTable.nextPage()}
               disabled={!tanstackTable.getCanNextPage()}
-              variant="ghost"
-              size="icon"
-              className="p-1.5"
+              className="p-1.5 rounded transition-colors disabled:opacity-30"
+              style={{ color: "#64748B" }}
+              onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}
             >
-              <ChevronRight size={15} />
-            </Button>
+              <ChevronRight size={14} />
+            </button>
           </div>
         </div>
       )}

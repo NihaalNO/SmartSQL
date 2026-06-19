@@ -11,7 +11,7 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Moderator panel client — uses sessionStorage mod_token, never cookies
+// Moderator panel client uses the tab-local token for API calls.
 export const modApi = axios.create({ baseURL: API_URL })
 
 modApi.interceptors.request.use((config) => {
@@ -42,7 +42,7 @@ export const authApi = {
   login: (email: string, password: string) =>
     api.post("/api/auth/login", { email, password }).then((r) => r.data),
 
-  loginWithGoogle: (data: { code: string }) =>
+  loginWithGoogle: (data: { code: string; redirect_uri?: string }) =>
     api.post("/api/auth/login/google", data).then((r) => r.data),
 
   adminLogin: (admin_name: string, admin_code: string) =>

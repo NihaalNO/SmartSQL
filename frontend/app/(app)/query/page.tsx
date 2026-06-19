@@ -4,6 +4,7 @@ import toast from "react-hot-toast"
 import {
   Lightbulb, BookmarkPlus, ThumbsUp, ThumbsDown,
   AlertTriangle, HelpCircle, FileCode2, Tag,
+  Sparkles,
 } from "lucide-react"
 import QueryInput   from "@/components/QueryInput"
 import SQLPreview   from "@/components/SQLPreview"
@@ -12,10 +13,6 @@ import ChartView    from "@/components/ChartView"
 import { queryApi } from "@/lib/api"
 import { canSaveQueries } from "@/lib/auth"
 import type { QueryResult, QueryIntent } from "@/types"
-
-// ---------------------------------------------------------------------------
-// Intent Analysis panel
-// ---------------------------------------------------------------------------
 
 const ACTION_LABEL: Record<string, string> = {
   select:  "SELECT",
@@ -27,10 +24,10 @@ const ACTION_LABEL: Record<string, string> = {
   group:   "GROUP BY",
 }
 
-function IntentChip({ label, value, bg, color }: { label: string; value: string; bg: string; color: string }) {
+function IntentChip({ label, value, color }: { label: string; value: string; color: string }) {
   return (
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium"
-      style={{ borderColor: `${color}40`, backgroundColor: bg, color }}>
+    <div className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium"
+      style={{ background: `${color}12`, color }}>
       <span style={{ opacity: 0.6, fontWeight: 400 }}>{label}</span>
       <span className="font-semibold">{value}</span>
     </div>
@@ -41,109 +38,106 @@ function IntentPanel({ intent }: { intent: QueryIntent }) {
   const hasContent = intent.table || intent.action || intent.attributes.length > 0
   if (!hasContent) return null
   return (
-    <div className="bg-surface-container-low rounded-xl border border-outline-variant/40 p-4">
-      <div className="flex items-center gap-2 mb-3">
-        <Tag size={13} className="text-on-surface-variant" />
-        <span className="text-label-sm text-on-surface-variant uppercase tracking-wide">Intent Analysis</span>
+    <div className="rounded-lg border p-3" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
+      <div className="flex items-center gap-2 mb-2">
+        <Tag size={12} style={{ color: "#64748B" }} />
+        <span className="text-xs font-medium uppercase tracking-wider" style={{ color: "#64748B" }}>Intent</span>
       </div>
-      <div className="flex flex-wrap gap-2">
-        <IntentChip label="Type"   value={intent.query_type}   bg="rgba(99,102,241,0.08)"  color="#6366f1" />
-        {intent.table && <IntentChip label="Table" value={intent.table} bg="rgba(8,145,178,0.08)" color="#0891b2" />}
+      <div className="flex flex-wrap gap-1.5">
+        <IntentChip label="Type"   value={intent.query_type}   color="#818CF8" />
+        {intent.table && <IntentChip label="Table" value={intent.table} color="#22D3EE" />}
         {intent.action && (
-          <IntentChip
-            label="Action"
-            value={ACTION_LABEL[intent.action] ?? intent.action.toUpperCase()}
-            bg="rgba(5,150,105,0.08)"
-            color="#059669"
-          />
+          <IntentChip label="Action" value={ACTION_LABEL[intent.action] ?? intent.action.toUpperCase()} color="#22C55E" />
         )}
         {intent.attributes.map(a => (
-          <IntentChip key={a} label="Attr" value={a} bg="rgba(217,119,6,0.08)" color="#d97706" />
+          <IntentChip key={a} label="Attr" value={a} color="#FB923C" />
         ))}
       </div>
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Need-Context panel
-// ---------------------------------------------------------------------------
-
 function NeedContextPanel({ message }: { message: string }) {
   const firstPeriod = message.indexOf(". ")
   const headline    = firstPeriod !== -1 ? message.slice(0, firstPeriod + 1) : message
   const detail      = firstPeriod !== -1 ? message.slice(firstPeriod + 2)    : ""
   return (
-    <div className="rounded-xl border border-amber-300 bg-amber-50 p-5 space-y-3">
+    <div className="rounded-lg border p-4" style={{ borderColor: "rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.04)" }}>
       <div className="flex items-start gap-3">
-        <HelpCircle size={20} className="text-amber-500 shrink-0 mt-0.5" />
+        <HelpCircle size={16} style={{ color: "#F59E0B" }} className="shrink-0 mt-0.5" />
         <div>
-          <p className="text-sm font-semibold text-amber-800">{headline}</p>
-          {detail && <p className="text-sm text-amber-700 mt-1">{detail}</p>}
+          <p className="text-sm font-semibold" style={{ color: "#F59E0B" }}>{headline}</p>
+          {detail && <p className="text-xs mt-1" style={{ color: "rgba(245,158,11,0.8)" }}>{detail}</p>}
         </div>
       </div>
-      <div className="border-t border-amber-200 pt-3 space-y-1.5">
-        <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">What you can do</p>
-        <ul className="text-xs text-amber-700 space-y-1 list-disc list-inside">
-          <li>Rephrase using a table name from the Schema Explorer above</li>
-          <li>Check the Schema Explorer for available tables and columns</li>
-          <li>Add the missing table to your database and refresh</li>
+      <div className="border-t mt-3 pt-3" style={{ borderColor: "rgba(245,158,11,0.1)" }}>
+        <p className="text-xs font-semibold uppercase tracking-wide mb-1.5" style={{ color: "#F59E0B" }}>Suggestions</p>
+        <ul className="text-xs space-y-1" style={{ color: "rgba(245,158,11,0.75)" }}>
+          <li>Use a table name from the Schema Explorer</li>
+          <li>Check available tables and columns</li>
+          <li>Add the missing table to your database</li>
         </ul>
       </div>
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Template panel
-// ---------------------------------------------------------------------------
-
 function TemplatePanel() {
   return (
-    <div className="rounded-xl border border-primary/20 p-4 flex items-start gap-3"
-      style={{ background: "rgba(0,74,198,0.05)" }}>
-      <FileCode2 size={18} className="text-primary shrink-0 mt-0.5" />
+    <div className="rounded-lg border p-4 flex items-start gap-3" style={{ borderColor: "rgba(96,165,250,0.2)", background: "rgba(96,165,250,0.04)" }}>
+      <FileCode2 size={16} style={{ color: "#60A5FA" }} className="shrink-0 mt-0.5" />
       <div>
-        <p className="text-sm font-semibold text-primary">General SQL Template</p>
-        <p className="text-sm mt-0.5" style={{ color: "#004ac6cc" }}>
-          The table referenced does not exist in your connected database.
-          Use this query as a starting-point template and adapt it to your own schema.
+        <p className="text-sm font-semibold" style={{ color: "#60A5FA" }}>General SQL Template</p>
+        <p className="text-xs mt-1" style={{ color: "rgba(96,165,250,0.7)" }}>
+          The table does not exist in your connected database. Use this as a starting point and adapt it to your schema.
         </p>
       </div>
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Ready-to-execute empty state (from Stitch)
-// ---------------------------------------------------------------------------
 
 function ReadyState() {
   return (
-    <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low
-                    flex flex-col items-center justify-center gap-3 py-14 text-center relative overflow-hidden">
-      {/* Subtle radial gradient from top-right, matching Stitch */}
-      <div className="absolute inset-0 pointer-events-none opacity-10"
-        style={{ background: "radial-gradient(circle at top right, #2563eb, transparent 70%)" }} />
-      <div className="w-16 h-16 rounded-full bg-surface-variant/40 flex items-center justify-center mb-1">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#737686" strokeWidth="1.5"
-          strokeLinecap="round" strokeLinejoin="round">
-          <path d="M3 3h18v4H3z"/><path d="M3 10h18v4H3z"/><path d="M3 17h18v4H3z"/>
-        </svg>
+    <div className="rounded-lg border flex flex-col items-center justify-center gap-3 py-16 text-center" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
+      <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: "rgba(20,184,166,0.1)" }}>
+        <Sparkles size={22} style={{ color: "#14B8A6" }} />
       </div>
       <div>
-        <h3 className="text-title-md text-on-surface">Ready to execute</h3>
-        <p className="text-body-md text-on-surface-variant mt-1 max-w-xs">
-          Write your query above and tap the lightning bolt to see results.
+        <h3 className="text-sm font-semibold text-[#CBD5E1]">Ready to query</h3>
+        <p className="text-xs mt-1 max-w-xs" style={{ color: "#64748B" }}>
+          Describe what you need in plain English. SmartSQL will generate and execute the SQL.
         </p>
       </div>
     </div>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+function LoadingState() {
+  return (
+    <div className="rounded-lg border flex items-center justify-center gap-3 py-12" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
+      <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }} />
+      <span className="text-sm" style={{ color: "#64748B" }}>Generating SQL…</span>
+    </div>
+  )
+}
+
+function InsightPanel({ insight }: { insight: string }) {
+  return (
+    <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(20,184,166,0.15)", background: "rgba(20,184,166,0.04)" }}>
+      <Lightbulb size={16} style={{ color: "#14B8A6" }} className="shrink-0 mt-0.5" />
+      <p className="text-sm leading-relaxed" style={{ color: "#CBD5E1" }}>{insight}</p>
+    </div>
+  )
+}
+
+function ErrorPanel({ error }: { error: string }) {
+  return (
+    <div className="flex items-start gap-3 rounded-lg border p-4" style={{ borderColor: "rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)" }}>
+      <AlertTriangle size={16} style={{ color: "#EF4444" }} className="shrink-0 mt-0.5" />
+      <p className="text-sm" style={{ color: "#EF4444" }}>{error}</p>
+    </div>
+  )
+}
 
 export default function QueryPage() {
   const [result,    setResult]    = useState<QueryResult | null>(null)
@@ -157,7 +151,7 @@ export default function QueryPage() {
     try {
       const data = await queryApi.run({ question, model_provider: provider, include_insight: true })
       setResult(data)
-      if      (data.status === "need_context") toast("More context needed — see details below", { icon: "❓" })
+      if      (data.status === "need_context") toast("More context needed", { icon: "❓" })
       else if (data.status === "template")     toast("Table not in schema — showing general template", { icon: "📄" })
       else if (data.status === "blocked")      toast.error("Query blocked: " + data.error)
       else if (data.status === "failed")       toast.error("Execution failed: " + data.error)
@@ -192,132 +186,108 @@ export default function QueryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-bright">
-      <div className="max-w-4xl mx-auto px-6 py-8 space-y-5">
+    <div className="p-6 max-w-4xl mx-auto space-y-4 animate-fade-in-up">
+      <div>
+        <h1 className="text-lg font-bold text-[#F8FAFC]">Query</h1>
+        <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>
+          Ask anything about your data in plain English
+        </p>
+      </div>
 
-        {/* Page title */}
-        <div>
-          <h1 className="text-headline-sm text-on-surface">Query</h1>
-          <p className="text-body-md text-on-surface-variant mt-0.5">
-            Ask anything about your data in plain English
-          </p>
-        </div>
+      <QueryInput onSubmit={handleQuery} loading={loading} />
 
-        {/* NL Input */}
-        <QueryInput onSubmit={handleQuery} loading={loading} />
+      {!result && !loading && <ReadyState />}
 
-        {/* Results area */}
-        {!result && !loading && <ReadyState />}
+      {loading && <LoadingState />}
 
-        {loading && (
-          <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-low
-                          flex items-center justify-center gap-3 py-14">
-            <div className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-            <span className="text-body-md text-on-surface-variant">Generating query…</span>
-          </div>
-        )}
+      {result && (
+        <div className="space-y-4">
+          {result.intent && <IntentPanel intent={result.intent} />}
 
-        {result && (
-          <div className="space-y-5">
+          {result.status === "need_context" && result.error && (
+            <NeedContextPanel message={result.error} />
+          )}
 
-            {/* Intent Analysis */}
-            {result.intent && <IntentPanel intent={result.intent} />}
+          {result.generated_sql && (
+            <SQLPreview sql={result.generated_sql} status={result.status} />
+          )}
 
-            {/* Need more context */}
-            {result.status === "need_context" && result.error && (
-              <NeedContextPanel message={result.error} />
-            )}
+          {result.status === "template" && <TemplatePanel />}
 
-            {/* SQL Terminal */}
-            {result.generated_sql && (
-              <SQLPreview sql={result.generated_sql} status={result.status} />
-            )}
+          {result.insight && <InsightPanel insight={result.insight} />}
 
-            {/* Template notice */}
-            {result.status === "template" && <TemplatePanel />}
+          {result.error && result.status === "failed" && (
+            <ErrorPanel error={result.error} />
+          )}
 
-            {/* AI Insight */}
-            {result.insight && (
-              <div className="flex gap-3 rounded-xl border border-primary/20 p-4"
-                style={{ background: "rgba(0,74,198,0.05)" }}>
-                <Lightbulb size={18} className="text-primary shrink-0 mt-0.5" />
-                <p className="text-body-md text-on-surface leading-relaxed">{result.insight}</p>
-              </div>
-            )}
+          {result.status === "success" && result.rows.length > 0 && (
+            <>
+              <ChartView columns={result.columns} rows={result.rows} />
+              <ResultsTable
+                columns={result.columns}
+                rows={result.rows}
+                rowCount={result.row_count}
+                executionTimeMs={result.execution_time_ms}
+              />
+            </>
+          )}
 
-            {/* Execution error */}
-            {result.error && result.status === "failed" && (
-              <div className="flex gap-3 bg-error-container border border-error/20 rounded-xl p-4">
-                <AlertTriangle size={18} className="text-error shrink-0 mt-0.5" />
-                <p className="text-body-md text-on-error-container">{result.error}</p>
-              </div>
-            )}
-
-            {/* Chart + Table */}
-            {result.status === "success" && result.rows.length > 0 && (
-              <>
-                <ChartView columns={result.columns} rows={result.rows} />
-                <ResultsTable
-                  columns={result.columns}
-                  rows={result.rows}
-                  rowCount={result.row_count}
-                  executionTimeMs={result.execution_time_ms}
-                />
-              </>
-            )}
-
-            {/* Actions bar */}
-            {result.log_id && result.status !== "need_context" && (
-              <div className="flex items-center gap-3 flex-wrap pt-1">
-                {canSaveQueries() && (result.status === "success" || result.status === "template") && (
-                  <button
-                    onClick={() => setShowSave(!showSave)}
-                    className="flex items-center gap-2 text-label-lg px-4 py-2 rounded-full border
-                               border-outline-variant hover:border-primary/40 hover:bg-surface-container
-                               text-on-surface transition-all"
-                  >
-                    <BookmarkPlus size={15} />
-                    Save Query
-                  </button>
-                )}
-                <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-label-sm text-on-surface-variant">Was this helpful?</span>
-                  <button onClick={() => handleFeedback(5)}
-                    className="p-1.5 rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-success">
-                    <ThumbsUp size={16} />
-                  </button>
-                  <button onClick={() => handleFeedback(2)}
-                    className="p-1.5 rounded-lg hover:bg-surface-container transition-colors text-on-surface-variant hover:text-error">
-                    <ThumbsDown size={16} />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Save form */}
-            {showSave && (
-              <div className="flex gap-3 items-center">
-                <input
-                  value={saveTitle}
-                  onChange={e => setSaveTitle(e.target.value)}
-                  placeholder="Query title…"
-                  className="flex-1 px-4 py-2.5 border border-outline-variant rounded-xl text-body-md
-                             text-on-surface bg-surface-container-low
-                             focus:outline-none focus:ring-2 transition-shadow"
-                  style={{ "--tw-ring-color": "#004ac6" } as React.CSSProperties}
-                />
+          {result.log_id && result.status !== "need_context" && (
+            <div className="flex items-center gap-3 flex-wrap pt-1">
+              {canSaveQueries() && (result.status === "success" || result.status === "template") && (
                 <button
-                  onClick={handleSave}
-                  className="px-5 py-2.5 text-white text-label-lg rounded-full transition-all active:scale-95"
-                  style={{ background: "#004ac6" }}
+                  onClick={() => setShowSave(!showSave)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-xs font-medium transition-all"
+                  style={{ borderColor: "rgba(148,163,184,0.1)", color: "#CBD5E1" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.2)" }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.1)" }}
                 >
+                  <BookmarkPlus size={13} />
                   Save
                 </button>
+              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <span className="text-xs" style={{ color: "#64748B" }}>Helpful?</span>
+                <button onClick={() => handleFeedback(5)}
+                  className="p-1 rounded transition-colors"
+                  style={{ color: "#64748B" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#22C55E"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#64748B"}>
+                  <ThumbsUp size={13} />
+                </button>
+                <button onClick={() => handleFeedback(2)}
+                  className="p-1 rounded transition-colors"
+                  style={{ color: "#64748B" }}
+                  onMouseEnter={e => e.currentTarget.style.color = "#EF4444"}
+                  onMouseLeave={e => e.currentTarget.style.color = "#64748B"}>
+                  <ThumbsDown size={13} />
+                </button>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </div>
+          )}
+
+          {showSave && (
+            <div className="flex gap-2 items-center">
+              <input
+                value={saveTitle}
+                onChange={e => setSaveTitle(e.target.value)}
+                placeholder="Query title…"
+                className="surface-input flex-1 px-3 py-2 text-sm"
+                style={{ borderColor: "rgba(148,163,184,0.15)" }}
+              />
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 rounded text-xs font-semibold text-white transition-all"
+                style={{ background: "#14B8A6" }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow = "0 0 10px rgba(20,184,166,0.3)"}
+                onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}
+              >
+                Save
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

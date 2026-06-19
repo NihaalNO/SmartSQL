@@ -9,6 +9,7 @@ export interface TokenResponse {
   full_name: string;
   email: string;
   role: string;
+  email_verified: boolean;
 }
 
 export interface UserOut {
@@ -17,6 +18,7 @@ export interface UserOut {
   email: string;
   role: string;
   status: string;
+  email_verified: boolean;
   created_at: string | Date;
 }
 

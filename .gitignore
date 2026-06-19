@@ -9,6 +9,11 @@ CUsersodath.claudescreen_response.json
 DESIGN.md
 node_modules
 .playwright-mcp
+settings.json
+settings.local.json
+.claude
+.agents
+.codex
 
 # ── OS artefacts ────────────────────────────────────────────
 .DS_Store
@@ -22,3 +27,4 @@ desktop.ini
 *.swo
 *.html
 *.png
+*settings.json

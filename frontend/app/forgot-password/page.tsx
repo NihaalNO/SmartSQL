@@ -3,7 +3,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { authApi } from "@/lib/api"
 import toast from "react-hot-toast"
-import { Resend, Mail } from "lucide-react"
+import { Send, Mail } from "lucide-react"
 import Link from "next/link"
 
 export const dynamic = 'force-dynamic'
@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
       >
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2">
-            <Resend size={22} className="text-primary" />
+            <Send size={22} className="text-primary" />
             <span className="text-lg font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>
               SmartSQL
             </span>

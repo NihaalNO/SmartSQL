@@ -26,6 +26,7 @@ model User {
   supabaseUid String? @unique @map("supabase_uid") @db.Uuid()
   fullName    String  @map("full_name")
   email       String  @unique @map("email")
+  emailVerifiedAt   DateTime?   @map("email_verified_at") @db.Timestamptz()
   roleId      Int     @map("role_id")
   status      String  @default("active") @map("status")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
