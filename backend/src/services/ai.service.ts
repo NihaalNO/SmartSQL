@@ -181,6 +181,19 @@ const INSIGHT_PROMPT = (): string =>
   `natural-language insight (2-4 sentences). Focus on patterns, anomalies, and key takeaways. ` +
   `Do not repeat the raw numbers verbatim.`;
 
+const SCHEMA_SUMMARY_PROMPT = (): string =>
+  `You are a database architect. Given a JSON description of a database schema, produce a concise ` +
+  `analysis. Your response must be valid JSON with exactly these fields:\n` +
+  `  "purpose": "What this database appears to be for (e.g. e-commerce, SaaS, analytics)"\n` +
+  `  "core_entities": ["List of primary/transaction tables"]\n` +
+  `  "lookup_tables": ["List of lookup/reference tables"]\n` +
+  `  "primary_workflow": "Description of the main data flow through the schema (2-3 sentences)"\n` +
+  `  "relationship_clusters": ["Brief descriptions of related groups of tables, e.g. 'Users + Orders + OrderItems form the sales core'"]\n` +
+  `  "complexity": "simple" | "moderate" | "complex"\n` +
+  `  "architecture_notes": "Any notable patterns, naming conventions, or design decisions observed"\n\n` +
+  `Use ONLY the schema metadata provided. Do not invent tables or relationships. ` +
+  `Return ONLY the JSON object. No explanation, no markdown fences.`;
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -264,6 +277,157 @@ export async function generateInsight(
     logger.warn("Insight generation failed:", err);
     return "";
   }
+}
+
+export async function generateSchemaSummary(
+  schemaJson: string,
+  provider?: string,
+  model?: string
+): Promise<{
+  purpose: string;
+  core_entities: string[];
+  lookup_tables: string[];
+  primary_workflow: string;
+  relationship_clusters: string[];
+  complexity: string;
+  architecture_notes: string;
+}> {
+  const prov = resolveProvider(provider);
+  const mod = resolveModel(prov, model);
+
+  const fallback = {
+    purpose: "Unable to analyze — AI provider unavailable",
+    core_entities: [],
+    lookup_tables: [],
+    primary_workflow: "",
+    relationship_clusters: [],
+    complexity: "unknown" as const,
+    architecture_notes: "",
+  };
+
+  try {
+    const raw = await callAI(SCHEMA_SUMMARY_PROMPT(), schemaJson, prov, mod);
+    const cleaned = cleanText(raw);
+    return JSON.parse(cleaned);
+  } catch (err) {
+    logger.warn("Schema summary generation failed:", err);
+    return fallback;
+  }
+}
+
+export function generateSchemaDocumentation(
+  tables: Array<{
+    name: string;
+    type: string;
+    columns: Array<{
+      name: string;
+      type: string;
+      nullable: boolean;
+      is_pk: boolean;
+      is_unique: boolean;
+      default_value: string | null;
+    }>;
+    row_estimate: number | null;
+  }>,
+  foreignKeys: Array<{
+    constraint_name: string;
+    source_table: string;
+    source_column: string;
+    target_table: string;
+    target_column: string;
+  }>,
+  indexes: Array<{
+    name: string;
+    table: string;
+    columns: string[];
+    unique: boolean;
+    index_type: string;
+  }>,
+  summary: {
+    purpose: string;
+    core_entities: string[];
+    primary_workflow: string;
+  }
+): string {
+  const lines: string[] = [];
+
+  lines.push("# Database Schema Documentation");
+  lines.push("");
+  lines.push(`> Auto-generated on ${new Date().toISOString().split("T")[0]}`);
+  lines.push("");
+
+  if (summary.purpose) {
+    lines.push("## Overview");
+    lines.push("");
+    lines.push(`**Purpose:** ${summary.purpose}`);
+    lines.push(`**Total Tables:** ${tables.length}`);
+    lines.push(`**Total Relationships:** ${foreignKeys.length}`);
+    lines.push(`**Total Indexes:** ${indexes.length}`);
+    lines.push("");
+
+    if (summary.core_entities.length) {
+      lines.push("**Core Entities:** " + summary.core_entities.join(", "));
+      lines.push("");
+    }
+
+    if (summary.primary_workflow) {
+      lines.push("**Primary Workflow:**");
+      lines.push("");
+      lines.push(summary.primary_workflow);
+      lines.push("");
+    }
+  }
+
+  lines.push("## Entity Relationship Diagram");
+  lines.push("");
+  lines.push("```");
+  for (const fk of foreignKeys) {
+    lines.push(`${fk.source_table}.${fk.source_column} ──→ ${fk.target_table}.${fk.target_column}`);
+  }
+  lines.push("```");
+  lines.push("");
+
+  lines.push("## Tables");
+  lines.push("");
+
+  for (const table of tables) {
+    lines.push(`### ${table.name}`);
+    lines.push("");
+    lines.push(`- **Type:** ${table.type}`);
+    if (table.row_estimate != null) {
+      lines.push(`- **Estimated Rows:** ${table.row_estimate.toLocaleString()}`);
+    }
+    lines.push("");
+
+    lines.push("| Column | Type | Nullable | PK | Unique | Default |");
+    lines.push("|--------|------|----------|----|--------|---------|");
+    for (const col of table.columns) {
+      lines.push(
+        `| ${col.name} | ${col.type} | ${col.nullable ? "YES" : "NO"} | ${col.is_pk ? "✓" : ""} | ${col.is_unique ? "✓" : ""} | ${col.default_value ?? ""} |`
+      );
+    }
+    lines.push("");
+
+    const tFks = foreignKeys.filter((fk) => fk.source_table === table.name);
+    if (tFks.length) {
+      lines.push("**Foreign Keys:**");
+      for (const fk of tFks) {
+        lines.push(`- \`${fk.source_column}\` → \`${fk.target_table}.${fk.target_column}\``);
+      }
+      lines.push("");
+    }
+
+    const tIdxs = indexes.filter((i) => i.table === table.name);
+    if (tIdxs.length) {
+      lines.push("**Indexes:**");
+      for (const idx of tIdxs) {
+        lines.push(`- \`${idx.name}\` on ${idx.columns.join(", ")}${idx.unique ? " (UNIQUE)" : ""} (${idx.index_type})`);
+      }
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n");
 }
 
 // ---------------------------------------------------------------------------

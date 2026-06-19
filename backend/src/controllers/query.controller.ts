@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
+import { Client } from "pg";
 import { getSupabase } from "../config/supabase";
 import { ApiError } from "../utils/ApiError";
+import { getSslConfig } from "../utils/ssl";
+import { logger } from "../utils/logger";
 import { extractIntent, generateSQL, generateInsight, CannotAnswerError } from "../services/ai.service";
 import { validateSQL, executeSQL, executeSQLOnExternal, logQuery } from "../services/query.service";
 import { getInternalSchema, getExternalSchema } from "../services/schema.service";
@@ -516,4 +519,115 @@ export async function submitFeedback(req: Request, res: Response): Promise<void>
   }
 
   res.json({ message: "Feedback submitted" });
+}
+
+// ---------------------------------------------------------------------------
+// Test external database connection
+// ---------------------------------------------------------------------------
+
+export async function testConnection(req: Request, res: Response): Promise<void> {
+  const {
+    db_host,
+    db_port = 5432,
+    db_name,
+    db_user,
+    db_password,
+    ssl_required = true,
+  } = req.body as {
+    db_host: string;
+    db_port?: number;
+    db_name: string;
+    db_user: string;
+    db_password: string;
+    ssl_required?: boolean;
+  };
+
+  let client: Client | null = null;
+
+  try {
+    const connStr = `postgresql://${encodeURIComponent(db_user)}:${encodeURIComponent(
+      db_password
+    )}@${encodeURIComponent(db_host)}:${encodeURIComponent(String(db_port))}/${encodeURIComponent(
+      db_name
+    )}`;
+
+    client = new Client({
+      connectionString: connStr,
+      ssl: getSslConfig(ssl_required),
+      connectionTimeoutMillis: 8000,
+    });
+
+    const connectStart = Date.now();
+    await client.connect();
+    const connectMs = Date.now() - connectStart;
+
+    // Verify read access by running a minimal introspection query
+    const schemaStart = Date.now();
+    const schemaRes = await client.query(
+      `SELECT COUNT(*)::int AS table_count FROM information_schema.tables WHERE table_schema = 'public'`
+    );
+    const tableCount = schemaRes.rows[0]?.table_count ?? 0;
+
+    const tablesRes = await client.query(
+      `SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY table_name`
+    );
+    const tableNames = tablesRes.rows.map((r: { table_name: string }) => r.table_name);
+    const schemaMs = Date.now() - schemaStart;
+
+    await client.end();
+    client = null;
+
+    logger.info(`Live DB test-connection: host=${db_host} db=${db_name} ssl=${ssl_required} connect=${connectMs}ms schema=${schemaMs}ms tables=${tableCount}`);
+
+    res.json({
+      status: "ok",
+      message: `Connected successfully. Found ${tableCount} table(s) in the public schema.`,
+      table_count: tableCount,
+      tables: tableNames.slice(0, 50),
+    });
+  } catch (err: unknown) {
+    if (client) {
+      await client.end().catch(() => {});
+    }
+    const msg = String(err);
+    let hint = "Could not connect to the database. Check your credentials and try again.";
+    let diagnostics: string[] = [];
+
+    if (msg.includes("could not translate host name") || msg.includes("Name or service not known")) {
+      hint = "Cannot resolve the hostname. Verify the host in your database provider's connection details.";
+      diagnostics = ["✓ Host format valid", "✗ DNS resolution failed"];
+    } else if (msg.includes("connect timeout") || msg.includes("Connection refused")) {
+      hint = "Connection refused or timed out. Check that the host and port are correct and the database is accepting connections.";
+      diagnostics = ["✓ Host resolved", "✗ Connection refused or timed out"];
+    } else if (msg.includes("password authentication failed")) {
+      hint = "Authentication failed. Check your database username and password.";
+      diagnostics = ["✓ Host resolved", "✓ TCP connection established", "✗ Authentication failed"];
+    } else if (msg.includes("self-signed certificate in certificate chain") || msg.includes("self signed certificate")) {
+      hint = "SSL certificate validation failed. The database uses a self-signed certificate.";
+      diagnostics = [
+        "✓ Host resolved",
+        "✓ Connection established",
+        "✗ SSL certificate validation failed",
+        "",
+        "Possible causes:",
+        "- Self-signed or untrusted CA certificate",
+        "- Missing CA_CERT_PATH configuration",
+        "- Corporate SSL inspection proxy",
+      ];
+    } else if (msg.includes("SSL") || msg.includes("ssl") || msg.includes("certificate")) {
+      hint = "SSL connection failed. The database may require a different SSL configuration.";
+      diagnostics = ["✓ Host resolved", "✓ Connection established", "✗ SSL handshake failed"];
+    } else {
+      diagnostics = ["✗ Connection failed — unexpected error"];
+    }
+
+    logger.warn(`Live DB test-connection failed: host=${db_host} db=${db_name} error=${msg.split('\n')[0]}`);
+
+    res.status(200).json({
+      status: "error",
+      message: hint,
+      diagnostics: diagnostics.length > 0 ? diagnostics : undefined,
+      detail: msg,
+    });
+  }
 }

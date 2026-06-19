@@ -1,7 +1,10 @@
 import { Router } from "express";
+import { z } from "zod";
 import * as SchemaController from "../controllers/schema.controller";
 import { asyncHandler } from "../utils/asyncHandler";
-import { authenticate } from "../middlewares/auth.middleware";
+import { authenticate, requireRole } from "../middlewares/auth.middleware";
+import { validateBody } from "../middlewares/validation.middleware";
+import * as schema from "../validators/schema.validator";
 
 const router = Router();
 
@@ -13,5 +16,27 @@ router.get("/internal", asyncHandler(SchemaController.internalSchema));
 
 // GET /api/schema/internal/tables
 router.get("/internal/tables", asyncHandler(SchemaController.internalTables));
+
+// GET /api/schema/internal/visualize — rich schema for visualizer
+router.get("/internal/visualize", asyncHandler(SchemaController.internalVisualize));
+
+// POST /api/schema/external/visualize — rich schema for live DB visualizer
+router.post(
+  "/external/visualize",
+  requireRole("admin", "analyst"),
+  validateBody(schema.externalVisualizeSchema),
+  asyncHandler(SchemaController.externalVisualize)
+);
+
+// POST /api/schema/external/analyze — full schema + AI analysis + docs
+router.post(
+  "/external/analyze",
+  requireRole("admin", "analyst"),
+  validateBody(schema.externalVisualizeSchema.extend({
+    model_provider: z.string().optional(),
+    model_name: z.string().optional(),
+  })),
+  asyncHandler(SchemaController.analyzeExternalSchema)
+);
 
 export default router;

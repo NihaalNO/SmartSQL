@@ -53,3 +53,70 @@ export interface TableSchema {
 }
 
 export type ChartType = "bar" | "line" | "pie" | "area" | "none"
+
+// ── Schema Visualization ──────────────────────────────────────────────────────
+
+export interface ColumnInfo {
+  name: string
+  type: string
+  nullable: boolean
+  is_pk: boolean
+  is_unique: boolean
+  default_value: string | null
+}
+
+export interface TableInfo {
+  name: string
+  schema: string
+  type: "table" | "view"
+  columns: ColumnInfo[]
+  row_estimate: number | null
+}
+
+export interface ForeignKeyInfo {
+  constraint_name: string
+  source_table: string
+  source_column: string
+  target_table: string
+  target_column: string
+}
+
+export interface IndexInfo {
+  name: string
+  table: string
+  columns: string[]
+  unique: boolean
+  index_type: string
+}
+
+export interface SchemaVisualization {
+  tables: TableInfo[]
+  foreign_keys: ForeignKeyInfo[]
+  indexes: IndexInfo[]
+  health_score: number
+  health_issues: string[]
+}
+
+export interface SchemaAnalysis {
+  purpose: string
+  core_entities: string[]
+  lookup_tables: string[]
+  primary_workflow: string
+  relationship_clusters: string[]
+  complexity: string
+  architecture_notes: string
+}
+
+export interface SchemaDocumentation {
+  markdown: string
+  generated_at: string
+  table_count: number
+  relationship_count: number
+  index_count: number
+}
+
+export interface SchemaAnalyzeResponse {
+  visualization: SchemaVisualization
+  analysis: SchemaAnalysis
+  documentation: SchemaDocumentation
+}

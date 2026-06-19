@@ -10,6 +10,7 @@ export async function middleware(request: NextRequest) {
     '/dashboard',
     '/query',
     '/saved',
+    '/schema-visualizer',
     '/live-db',
     '/history'
   ]

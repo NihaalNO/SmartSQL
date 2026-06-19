@@ -1,4 +1,5 @@
 import { Client } from "pg";
+import { getSslConfig } from "../utils/ssl";
 import { SupabaseClient } from "@supabase/supabase-js";
 import { getSupabase } from "../config/supabase";
 import { logger } from "../utils/logger";
@@ -179,7 +180,7 @@ export async function executeSQLOnExternal(
 
   let client: Client | null = null;
   try {
-    const sslMode = sslRequired ? { rejectUnauthorized: false } : sslRequired === false ? false : { rejectUnauthorized: false };
+    const sslMode = getSslConfig(sslRequired);
     // Build connection from the connection string, keeping SSL behaviour
     client = new Client({
       connectionString,

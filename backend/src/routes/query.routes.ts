@@ -20,6 +20,15 @@ router.post(
   asyncHandler(QueryController.runQuery)
 );
 
+// POST /api/queries/test-connection — admin, analyst only
+router.post(
+  "/test-connection",
+  queryLimiter,
+  requireRole("admin", "analyst"),
+  validateBody(schema.testConnectionSchema),
+  asyncHandler(QueryController.testConnection)
+);
+
 // POST /api/queries/run-live — admin, analyst only
 router.post(
   "/run-live",

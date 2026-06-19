@@ -21,6 +21,7 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DB_CA_CERT_PATH: z.string().optional().default(""),
 
   // AI
   GROQ_API_KEY: z.string().optional().default(""),

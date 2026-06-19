@@ -28,6 +28,15 @@ export const saveQuerySchema = z.object({
   is_favorite: z.boolean().optional().default(false),
 });
 
+export const testConnectionSchema = z.object({
+  db_host: z.string().min(1, "db_host is required"),
+  db_port: z.number().int().min(1).max(65535).optional().default(5432),
+  db_name: z.string().min(1, "db_name is required"),
+  db_user: z.string().min(1, "db_user is required"),
+  db_password: z.string().min(1, "db_password is required"),
+  ssl_required: z.boolean().optional().default(true),
+});
+
 export const feedbackSchema = z.object({
   log_id: z.number().int().positive("log_id must be a positive integer"),
   rating: z.number().int().min(1).max(5),

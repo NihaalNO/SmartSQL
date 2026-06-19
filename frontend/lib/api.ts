@@ -74,6 +74,15 @@ export const queryApi = {
     include_insight?: boolean
   }) => api.post("/api/queries/run", payload).then((r) => r.data),
 
+  testConnection: (payload: {
+    db_host: string
+    db_port?: number
+    db_name: string
+    db_user: string
+    db_password: string
+    ssl_required?: boolean
+  }) => api.post("/api/queries/test-connection", payload).then((r) => r.data),
+
   runLive: (payload: {
     question: string
     db_host: string
@@ -104,6 +113,29 @@ export const queryApi = {
 
 export const schemaApi = {
   tables: () => api.get("/api/schema/internal/tables").then((r) => r.data),
+
+  visualize: () =>
+    api.get("/api/schema/internal/visualize").then((r) => r.data),
+
+  externalVisualize: (payload: {
+    db_host: string
+    db_port?: number
+    db_name: string
+    db_user: string
+    db_password: string
+    ssl_required?: boolean
+  }) => api.post("/api/schema/external/visualize", payload).then((r) => r.data),
+
+  externalAnalyze: (payload: {
+    db_host: string
+    db_port?: number
+    db_name: string
+    db_user: string
+    db_password: string
+    ssl_required?: boolean
+    model_provider?: string
+    model_name?: string
+  }) => api.post("/api/schema/external/analyze", payload).then((r) => r.data),
 }
 
 // ── Admin (moderator panel) ────────────────────────────────────────────────────

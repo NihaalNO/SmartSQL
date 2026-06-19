@@ -88,3 +88,55 @@ export interface TableSchema {
   table: string;
   columns: TableColumn[];
 }
+
+// ---------------------------------------------------------------------------
+// Schema Visualization types
+// ---------------------------------------------------------------------------
+
+export interface ColumnInfo {
+  name: string;
+  type: string;
+  nullable: boolean;
+  is_pk: boolean;
+  is_unique: boolean;
+  default_value: string | null;
+}
+
+export interface TableInfo {
+  name: string;
+  schema: string;
+  type: "table" | "view";
+  columns: ColumnInfo[];
+  row_estimate: number | null;
+}
+
+export interface ForeignKeyInfo {
+  constraint_name: string;
+  source_table: string;
+  source_column: string;
+  target_table: string;
+  target_column: string;
+}
+
+export interface IndexInfo {
+  name: string;
+  table: string;
+  columns: string[];
+  unique: boolean;
+  index_type: string;
+}
+
+export interface SchemaVisualization {
+  tables: TableInfo[];
+  foreign_keys: ForeignKeyInfo[];
+  indexes: IndexInfo[];
+  health_score: number;
+  health_issues: string[];
+}
+
+export interface SchemaHealthIssue {
+  severity: "error" | "warning" | "info";
+  table: string;
+  message: string;
+  recommendation: string;
+}

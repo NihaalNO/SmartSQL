@@ -2,9 +2,9 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
-import { Zap, AlertTriangle, Eye, EyeOff, Info, Database } from "lucide-react"
+import { Zap, AlertTriangle, Eye, EyeOff, Info, Database, CheckCircle, XCircle, Loader2, Layers } from "lucide-react"
 import toast from "react-hot-toast"
-import { queryApi } from "@/lib/api"
+import { queryApi, schemaApi } from "@/lib/api"
 import { canUseLiveDb } from "@/lib/auth"
 import SQLPreview from "@/components/SQLPreview"
 import ResultsTable from "@/components/ResultsTable"
@@ -20,6 +20,28 @@ interface CredForm {
   ssl_required: boolean
 }
 
+type TestPhase = "idle" | "resolving" | "connecting" | "ssl" | "schema" | "analyzing" | "done" | "error"
+
+const PHASE_LABELS: Record<TestPhase, string> = {
+  idle:      "Ready",
+  resolving: "Resolving host…",
+  connecting:"Establishing connection…",
+  ssl:       "Verifying SSL certificate…",
+  schema:    "Discovering tables and columns…",
+  analyzing: "Analyzing schema & generating ERD…",
+  done:      "Connected successfully",
+  error:     "Connection failed",
+}
+
+interface ConnectionTestResult {
+  status: "ok" | "error"
+  message: string
+  table_count?: number
+  tables?: string[]
+  detail?: string
+  diagnostics?: string[]
+}
+
 export default function LiveDbPage() {
   const router = useRouter()
   const [connected, setConnected]   = useState(false)
@@ -31,6 +53,11 @@ export default function LiveDbPage() {
   const [result, setResult]         = useState<QueryResult | null>(null)
   const [connError, setConnError]   = useState<string | null>(null)
 
+  // Connection test states
+  const [testing, setTesting]       = useState(false)
+  const [testPhase, setTestPhase]   = useState<TestPhase>("idle")
+  const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null)
+
   useEffect(() => {
     if (!canUseLiveDb()) router.replace("/query")
   }, [router])
@@ -39,10 +66,76 @@ export default function LiveDbPage() {
     defaultValues: { db_port: 5432, ssl_required: true },
   })
 
-  const connect = (data: CredForm) => {
-    setCreds(data)
-    setConnected(true)
-    toast.success("Credentials set — held in memory only, never stored")
+  const testAndConnect = async (data: CredForm) => {
+    setTesting(true)
+    setTestPhase("resolving")
+    setTestResult(null)
+    setConnError(null)
+
+    const advancePhase = (() => {
+      let cancelled = false
+      const timers: ReturnType<typeof setTimeout>[] = []
+
+      const schedule = (phase: TestPhase, delay: number) => {
+        const t = setTimeout(() => { if (!cancelled) setTestPhase(phase) }, delay)
+        timers.push(t)
+      }
+
+      schedule("connecting", 400)
+      if (data.ssl_required) schedule("ssl", 800)
+      schedule("schema", 1200)
+
+      return () => { cancelled = true; timers.forEach(clearTimeout) }
+    })()
+
+    try {
+      const res = await queryApi.testConnection({
+        db_host: data.db_host,
+        db_port: data.db_port,
+        db_name: data.db_name,
+        db_user: data.db_user,
+        db_password: data.db_password,
+        ssl_required: data.ssl_required,
+      })
+
+      advancePhase()
+
+      if (res.status === "ok") {
+        setTestPhase("analyzing")
+        setTestResult({
+          status: "ok",
+          message: res.message,
+          table_count: res.table_count,
+          tables: res.tables,
+        })
+
+        sessionStorage.setItem("liveDbCreds", JSON.stringify({
+          db_host: data.db_host,
+          db_port: data.db_port,
+          db_name: data.db_name,
+          db_user: data.db_user,
+          db_password: data.db_password,
+          ssl_required: data.ssl_required,
+        }))
+
+        await new Promise((r) => setTimeout(r, 800))
+
+        router.replace("/schema-visualizer?source=live-db")
+      } else {
+        setTestPhase("error")
+        setTestResult({ status: "error", message: res.message, detail: res.detail, diagnostics: res.diagnostics })
+      }
+    } catch (err: unknown) {
+      advancePhase()
+      setTestPhase("error")
+      const detail =
+        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
+        (err as Error)?.message ||
+        "Connection test failed"
+      setTestResult({ status: "error", message: detail })
+    } finally {
+      setTesting(false)
+    }
   }
 
   const disconnect = () => {
@@ -51,6 +144,8 @@ export default function LiveDbPage() {
     setResult(null)
     setQuestion("")
     setConnError(null)
+    setTestPhase("idle")
+    setTestResult(null)
   }
 
   const runQuery = async (e: React.FormEvent) => {
@@ -92,6 +187,14 @@ export default function LiveDbPage() {
     }
   }
 
+  const phaseIcon = (phase: TestPhase) => {
+    if (testing && phase === testPhase) return <Loader2 size={14} className="animate-spin" style={{ color: "#60A5FA" }} />
+    if (!testing && testPhase === "done") return <CheckCircle size={14} style={{ color: "#22C55E" }} />
+    if (testPhase === "error") return <XCircle size={14} style={{ color: "#EF4444" }} />
+    if (testPhase === phase) return <Loader2 size={14} className="animate-spin" style={{ color: "#60A5FA" }} />
+    return <div className="w-3.5 h-3.5 rounded-full border" style={{ borderColor: "rgba(148,163,184,0.2)" }} />
+  }
+
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-5 animate-fade-in-up">
       <div>
@@ -100,7 +203,7 @@ export default function LiveDbPage() {
           Live DB Mode
         </h1>
         <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>
-          Connect any PostgreSQL database for a read-only session. Credentials are never stored.
+          Connect any PostgreSQL database (including Supabase) for a read-only session. Credentials are never stored.
         </p>
       </div>
 
@@ -108,8 +211,8 @@ export default function LiveDbPage() {
         <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)" }}>
           <AlertTriangle size={16} style={{ color: "#EF4444" }} className="shrink-0 mt-0.5" />
           <div className="text-sm" style={{ color: "#EF4444" }}>
-            <p className="font-semibold mb-1">Connection failed — credentials cleared</p>
-            <p className="text-xs opacity-80">{connError.replace("Could not connect to database — Error reading schema: ", "")}</p>
+            <p className="font-semibold mb-1">Query error</p>
+            <p className="text-xs opacity-80">{connError}</p>
             <button onClick={() => setConnError(null)} className="text-xs underline mt-1 opacity-70 hover:opacity-100" style={{ color: "#EF4444" }}>
               Dismiss
             </button>
@@ -128,28 +231,30 @@ export default function LiveDbPage() {
       <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(96,165,250,0.15)", background: "rgba(96,165,250,0.04)" }}>
         <Info size={16} style={{ color: "#60A5FA" }} className="shrink-0 mt-0.5" />
         <div className="text-sm" style={{ color: "#60A5FA" }}>
-          <p className="font-medium mb-1">Using a Neon database?</p>
+          <p className="font-medium mb-1">Using a Supabase database?</p>
           <ol className="text-xs space-y-1 opacity-80 list-decimal list-inside">
-            <li>Open <strong>Neon Console → your project → Connection Details</strong></li>
-            <li>Copy the host, port <strong>5432</strong>, database <strong>neondb</strong></li>
-            <li>Keep <strong>Require SSL</strong> checked</li>
+            <li>Open <strong>Supabase Dashboard → your project → Connect</strong></li>
+            <li>Choose <strong>Session pooler</strong> (port 6543) or <strong>Direct</strong> (port 5432)</li>
+            <li>Copy the host, port, database name (<strong>postgres</strong>), user (<strong>postgres</strong>)</li>
+            <li>Keep <strong>Require SSL</strong> checked (required for Supabase)</li>
           </ol>
+          <a href="/how-to-connect" className="text-xs underline mt-2 inline-block opacity-80 hover:opacity-100">View full setup guide →</a>
         </div>
       </div>
 
-      {!connected ? (
+      {!connected && !testing && testPhase !== "error" && (
         <div className="rounded-lg border p-5" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
           <h2 className="text-sm font-semibold text-[#CBD5E1] mb-4 flex items-center gap-2">
             <Database size={14} style={{ color: "#14B8A6" }} />
             PostgreSQL Connection Details
           </h2>
-          <form onSubmit={handleSubmit(connect)} className="space-y-4">
+          <form onSubmit={handleSubmit(testAndConnect)} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Host</label>
                 <input
                   {...register("db_host", { required: "Required" })}
-                  placeholder="ep-name-id.us-east-2.aws.neon.tech"
+                  placeholder="db.<project-ref>.supabase.co"
                   className="surface-input w-full px-3 py-2 text-sm"
                   style={{ borderColor: "rgba(148,163,184,0.15)" }}
                 />
@@ -168,7 +273,7 @@ export default function LiveDbPage() {
                 <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Database</label>
                 <input
                   {...register("db_name", { required: "Required" })}
-                  placeholder="neondb"
+                  placeholder="postgres"
                   className="surface-input w-full px-3 py-2 text-sm"
                   style={{ borderColor: "rgba(148,163,184,0.15)" }}
                 />
@@ -178,7 +283,7 @@ export default function LiveDbPage() {
                 <label className="block text-xs font-medium text-[#CBD5E1] mb-1">User</label>
                 <input
                   {...register("db_user", { required: "Required" })}
-                  placeholder="neondb_owner"
+                  placeholder="postgres"
                   className="surface-input w-full px-3 py-2 text-sm"
                   style={{ borderColor: "rgba(148,163,184,0.15)" }}
                 />
@@ -207,13 +312,84 @@ export default function LiveDbPage() {
                 </label>
               </div>
             </div>
-            <button type="submit" className="inline-flex items-center gap-2 px-4 py-2 rounded text-xs font-semibold text-white transition-all" style={{ background: "#14B8A6" }}>
-              <Database size={13} />
-              Connect
+            <button type="submit" disabled={testing} className="inline-flex items-center gap-2 px-4 py-2 rounded text-xs font-semibold text-white transition-all disabled:opacity-50" style={{ background: "#14B8A6" }}>
+              {testing ? <Loader2 size={13} className="animate-spin" /> : <Database size={13} />}
+              {testing ? "Testing connection…" : "Test & Connect"}
             </button>
           </form>
         </div>
-      ) : (
+      )}
+
+      {/* Connection test progress */}
+      {(testing || testPhase === "done" || testPhase === "error") && (
+        <div className="rounded-lg border p-5 space-y-3" style={{
+          borderColor: testPhase === "done" ? "rgba(34,197,94,0.15)" : testPhase === "error" ? "rgba(239,68,68,0.2)" : "rgba(148,163,184,0.08)",
+          background: testPhase === "done" ? "rgba(34,197,94,0.04)" : testPhase === "error" ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.02)",
+        }}>
+          <div className="text-sm font-semibold flex items-center gap-2" style={{
+            color: testPhase === "done" ? "#22C55E" : testPhase === "error" ? "#EF4444" : "#CBD5E1",
+          }}>
+            {testPhase === "done" ? <CheckCircle size={16} /> : testPhase === "error" ? <XCircle size={16} /> : <Loader2 size={16} className="animate-spin" />}
+            {PHASE_LABELS[testPhase === "done" || testPhase === "error" ? testPhase : testPhase === "idle" ? "idle" : testPhase]}
+          </div>
+
+          {/* Phase timeline */}
+          <div className="space-y-1.5 text-xs">
+            {(["resolving", "connecting", "ssl", "schema", "analyzing"] as TestPhase[]).map((phase) => {
+              const isActive = testPhase === phase
+              const phaseOrder = ["resolving", "connecting", "ssl", "schema", "analyzing"]
+              const isPast = testPhase === "done" || testPhase === "error" || (testPhase !== phase && phaseOrder.indexOf(testPhase) > phaseOrder.indexOf(phase))
+              return (
+                <div key={phase} className="flex items-center gap-2" style={{ color: isActive ? "#F8FAFC" : isPast ? "#22C55E" : "#64748B" }}>
+                  {isPast && !(testPhase === "error" && !isActive)
+                    ? <CheckCircle size={12} style={{ color: "#22C55E" }} />
+                    : isActive
+                      ? <Loader2 size={12} className="animate-spin" style={{ color: "#60A5FA" }} />
+                      : <div className="w-3 h-3 rounded-full border" style={{ borderColor: "rgba(148,163,184,0.2)" }} />
+                  }
+                  <span>{PHASE_LABELS[phase]}</span>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Success details */}
+          {testPhase === "analyzing" && testResult?.table_count != null && (
+            <div className="pt-2 text-xs space-y-2" style={{ color: "#64748B" }}>
+              <p>Found <strong style={{ color: "#22C55E" }}>{testResult.table_count}</strong> table(s)</p>
+              <div className="flex items-center gap-2 text-[#F8FAFC]">
+                <Loader2 size={13} className="animate-spin" style={{ color: "#14B8A6" }} />
+                <span>Generating schema visualizer & AI analysis…</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error details */}
+          {testPhase === "error" && testResult && (
+            <div className="pt-2 text-xs space-y-1">
+              <p style={{ color: "#EF4444" }}>{testResult.message}</p>
+              {testResult.diagnostics && testResult.diagnostics.length > 0 && (
+                <div className="mt-2 space-y-0.5 font-mono">
+                  {testResult.diagnostics.map((line, i) => (
+                    <p key={i} style={{
+                      color: line.startsWith("✓") ? "#22C55E" : line.startsWith("✗") ? "#EF4444" : "#64748B",
+                    }}>{line}</p>
+                  ))}
+                </div>
+              )}
+              {testResult.detail && (
+                <p className="font-mono opacity-60 break-all mt-2" style={{ color: "#EF4444" }}>{testResult.detail}</p>
+              )}
+              <button onClick={() => { setTestPhase("idle"); setTestResult(null) }}
+                className="text-xs underline mt-2 opacity-70 hover:opacity-100" style={{ color: "#EF4444" }}>
+                Try again
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {connected && creds && (
         <div className="space-y-5">
           <div className="rounded-lg border p-4 flex items-center justify-between" style={{ borderColor: "rgba(34,197,94,0.15)", background: "rgba(34,197,94,0.04)" }}>
             <div className="flex items-center gap-2">

@@ -5,16 +5,17 @@ import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, Search, History,
   BookmarkCheck, Zap, LogOut, Shield,
-  PanelLeftClose, PanelLeftOpen,
+  PanelLeftClose, PanelLeftOpen, Layers,
 } from "lucide-react"
 import { logout, getUser } from "@/lib/auth"
 
 const ALL_NAV = [
-  { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard, roles: ["analyst", "viewer"] },
-  { href: "/query",     label: "Query",         icon: Search,          roles: ["analyst", "viewer"] },
-  { href: "/history",   label: "History",       icon: History,         roles: ["analyst", "viewer"] },
-  { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck,   roles: ["analyst"] },
-  { href: "/live-db",   label: "Live DB Mode",  icon: Zap,             roles: ["analyst"] },
+  { href: "/dashboard",        label: "Dashboard",       icon: LayoutDashboard, roles: ["analyst", "viewer"] },
+  { href: "/query",            label: "Query",            icon: Search,          roles: ["analyst", "viewer"] },
+  { href: "/history",          label: "History",          icon: History,         roles: ["analyst", "viewer"] },
+  { href: "/saved",            label: "Saved Queries",    icon: BookmarkCheck,   roles: ["analyst"] },
+  { href: "/schema-visualizer", label: "Schema Visualizer", icon: Layers,       roles: ["analyst", "viewer"] },
+  { href: "/live-db",          label: "Live DB Mode",     icon: Zap,             roles: ["analyst"] },
 ] as const
 
 const ROLE_META: Record<string, { label: string; color: string }> = {
