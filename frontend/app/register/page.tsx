@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
 import {
@@ -13,7 +13,6 @@ import {
 import Link from "next/link"
 
 import { authApi } from "@/lib/api"
-import { saveAuth, getAndClearRedirectUrl } from "@/lib/auth/session"
 import { getAuthDisplayError } from "@/lib/auth/errors"
 import { startSmartSqlGoogleAuth } from "@/lib/auth/google"
 import { supabase } from "@/lib/supabase"
@@ -59,8 +58,6 @@ interface RegisterForm {
 
 export default function RegisterPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-
   const [loading, setLoading] = useState(false)
   const [agreed, setAgreed] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -90,11 +87,9 @@ export default function RegisterPage() {
     if (!agreed) { toast.error("Please agree to the Terms of Service"); return }
     setLoading(true)
     try {
-      const res = await authApi.register({ ...data, role: selectedRole })
-      saveAuth(res)
-      const redirectUrl = searchParams.get("redirect") || getAndClearRedirectUrl() || "/dashboard"
-      toast.success("Account created successfully")
-      router.push(redirectUrl)
+      await authApi.register({ ...data, role: selectedRole })
+      toast.success("Account created. Please check your email to verify your account, then log in.")
+      router.push("/login")
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Registration failed. Please try again."
       toast.error(msg)

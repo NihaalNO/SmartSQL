@@ -185,31 +185,10 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     await sendEmail(emailData).catch(() => {});
 
-    // Auto-login: get a session token for the newly registered user
-    const authClient = getAuthClient();
-    const { data: signInData, error: signInError } =
-      await authClient.auth.signInWithPassword({ email, password });
-
-    if (signInError || !signInData.session) {
-      // If auto-login fails, still return success with message
-      res.status(201).json({
-        message: "Registration successful. Please check your email to verify your account, then log in.",
-        user_id: user.id,
-        email: user.email
-      });
-      return;
-    }
-
-    const roleName = await getRoleName(sb, user.role_id);
-
     res.status(201).json({
-      access_token: signInData.session.access_token,
-      token_type: "bearer",
+      message: "Registration successful. Please check your email to verify your account, then log in.",
       user_id: user.id,
-      full_name: user.full_name,
-      email: user.email,
-      role: roleName,
-      email_verified: false,
+      email: user.email
     });
   } catch (err: unknown) {
     // Best effort: clean up auth user on profile creation failure
