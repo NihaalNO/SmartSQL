@@ -1,5 +1,3 @@
-import Cookies from "js-cookie"
-
 export interface AuthUser {
   user_id: number
   full_name: string
@@ -10,29 +8,11 @@ export interface AuthUser {
 }
 
 export function saveAuth(data: AuthUser) {
-  if (!data || !data.access_token) {
-    return;
-  }
-
+  if (!data || !data.access_token) return
   try {
-    Cookies.set("token", data.access_token, {
-      expires: 1,
-      path: "/",
-      sameSite: "lax"
-    });
-  } catch (cookieError) {
-    try {
-      const cookieString = `token=${data.access_token}; expires=${new Date(Date.now() + 86400000).toUTCString()}; path=/; samesite=lax`;
-      document.cookie = cookieString;
-    } catch (manualError) {
-      console.error("Unable to persist auth cookie", manualError);
-    }
-  }
-
-  try {
-    sessionStorage.setItem("user", JSON.stringify(data));
+    sessionStorage.setItem("user", JSON.stringify(data))
   } catch (storageError) {
-    console.error("Unable to persist auth session", storageError);
+    console.error("Unable to persist auth session", storageError)
   }
 }
 
@@ -43,7 +23,6 @@ export function getUser(): AuthUser | null {
 }
 
 export function logout() {
-  Cookies.remove("token", { path: "/" })
   if (typeof window !== "undefined") {
     sessionStorage.removeItem("user")
     window.location.href = "/login"
@@ -51,7 +30,10 @@ export function logout() {
 }
 
 export function isLoggedIn(): boolean {
-  return !!Cookies.get("token")
+  if (typeof window === "undefined") return false
+  const raw = sessionStorage.getItem("user")
+  if (!raw) return false
+  try { return !!JSON.parse(raw).access_token } catch { return false }
 }
 
 export function isEmailVerified(): boolean {

@@ -4,6 +4,8 @@ import { logger } from "../utils/logger";
 import { getSslConfig } from "../utils/ssl";
 import { TableSchema, SchemaVisualization, ColumnInfo, ForeignKeyInfo, IndexInfo, TableInfo } from "../types/query.types";
 
+const isDebug = process.env.NODE_ENV !== "production";
+
 // ============================================================================
 // Internal schema via Supabase RPC
 // ============================================================================
@@ -210,78 +212,120 @@ async function fetchRichSchema(clientOrStr: Client | string, sslRequired = true)
     }
 
     const q = client!;
+    const errors: string[] = [];
 
-    const { rows: tablesRes } = await q.query(`
-      SELECT
-        t.table_name,
-        t.table_type,
-        (SELECT reltuples::bigint FROM pg_class WHERE oid = (quote_ident(t.table_schema) || '.' || quote_ident(t.table_name))::regclass) AS row_estimate
-      FROM information_schema.tables t
-      WHERE t.table_schema = 'public'
-      ORDER BY t.table_name
-    `);
+    // --- Tables ---
+    let tablesRes: any[] = [];
+    try {
+      const res = await q.query(`
+        SELECT
+          t.table_name,
+          t.table_type,
+          COALESCE(c.reltuples::bigint, 0) AS row_estimate
+        FROM information_schema.tables t
+        LEFT JOIN pg_class c ON c.relname = t.table_name AND c.relnamespace = (quote_ident(t.table_schema)::regnamespace)
+        WHERE t.table_schema = 'public'
+        ORDER BY t.table_name
+      `);
+      tablesRes = res.rows;
+      if (isDebug) logger.info(`[fetchRichSchema] Found ${tablesRes.length} tables`);
+    } catch (err) {
+      errors.push(`tables query failed: ${err}`);
+      logger.error("[fetchRichSchema] tables query failed:", err);
+    }
 
-    const { rows: columnsRes } = await q.query(`
-      SELECT
-        c.table_name,
-        c.column_name,
-        c.data_type,
-        c.is_nullable,
-        c.column_default,
-        CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END AS is_pk,
-        CASE WHEN uc.column_name IS NOT NULL THEN true ELSE false END AS is_unique
-      FROM information_schema.columns c
-      LEFT JOIN (
-        SELECT ku.table_name, ku.column_name
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage ku
-          ON tc.constraint_name = ku.constraint_name
-          AND tc.table_schema = ku.table_schema
-        WHERE tc.constraint_type = 'PRIMARY KEY'
-          AND tc.table_schema = 'public'
-      ) pk ON pk.table_name = c.table_name AND pk.column_name = c.column_name
-      LEFT JOIN (
-        SELECT ku.table_name, ku.column_name
-        FROM information_schema.table_constraints tc
-        JOIN information_schema.key_column_usage ku
-          ON tc.constraint_name = ku.constraint_name
-          AND tc.table_schema = ku.table_schema
+    // --- Columns ---
+    let columnsRes: any[] = [];
+    try {
+      const res = await q.query(`
+        SELECT
+          c.table_name,
+          c.column_name,
+          c.data_type,
+          c.is_nullable,
+          c.column_default,
+          CASE WHEN pk.column_name IS NOT NULL THEN true ELSE false END AS is_pk,
+          CASE WHEN uc.column_name IS NOT NULL THEN true ELSE false END AS is_unique
+        FROM information_schema.columns c
+        LEFT JOIN (
+          SELECT ku.table_name, ku.column_name
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage ku
+            ON tc.constraint_name = ku.constraint_name
+            AND tc.table_schema = ku.table_schema
+          WHERE tc.constraint_type = 'PRIMARY KEY'
+            AND tc.table_schema = 'public'
+        ) pk ON pk.table_name = c.table_name AND pk.column_name = c.column_name
+        LEFT JOIN (
+          SELECT ku.table_name, ku.column_name
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage ku
+            ON tc.constraint_name = ku.constraint_name
+            AND tc.table_schema = ku.table_schema
         WHERE tc.constraint_type = 'UNIQUE'
           AND tc.table_schema = 'public'
-      ) uc ON uc.table_name = c.table_name AND uc.column_name = c.column_name
-      WHERE c.table_schema = 'public'
-      ORDER BY c.table_name, c.ordinal_position
-    `);
+        ) uc ON uc.table_name = c.table_name AND uc.column_name = c.column_name
+        WHERE c.table_schema = 'public'
+        ORDER BY c.table_name, c.ordinal_position
+      `);
+      columnsRes = res.rows;
+      if (isDebug) logger.info(`[fetchRichSchema] Found ${columnsRes.length} column definitions`);
+    } catch (err) {
+      errors.push(`columns query failed: ${err}`);
+      logger.error("[fetchRichSchema] columns query failed:", err);
+    }
 
-    const { rows: fkRes } = await q.query(`
-      SELECT
-        tc.constraint_name,
-        kcu.table_name AS source_table,
-        kcu.column_name AS source_column,
-        ccu.table_name AS target_table,
-        ccu.column_name AS target_column
-      FROM information_schema.table_constraints tc
-      JOIN information_schema.key_column_usage kcu
-        ON tc.constraint_name = kcu.constraint_name
-        AND tc.table_schema = kcu.table_schema
-      JOIN information_schema.constraint_column_usage ccu
-        ON tc.constraint_name = ccu.constraint_name
-        AND tc.table_schema = ccu.table_schema
-      WHERE tc.constraint_type = 'FOREIGN KEY'
-        AND tc.table_schema = 'public'
-    `);
+    // --- Foreign Keys ---
+    let fkRes: any[] = [];
+    try {
+      const res = await q.query(`
+        SELECT
+          tc.constraint_name,
+          kcu.table_name AS source_table,
+          kcu.column_name AS source_column,
+          ccu.table_name AS target_table,
+          ccu.column_name AS target_column
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        JOIN information_schema.constraint_column_usage ccu
+          ON tc.constraint_name = ccu.constraint_name
+          AND tc.table_schema = ccu.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema = 'public'
+      `);
+      fkRes = res.rows;
+      if (isDebug) logger.info(`[fetchRichSchema] Found ${fkRes.length} foreign keys`);
+    } catch (err) {
+      errors.push(`foreign keys query failed: ${err}`);
+      logger.error("[fetchRichSchema] foreign keys query failed:", err);
+    }
 
-    const { rows: idxRes } = await q.query(`
-      SELECT
-        indexname AS name,
-        tablename AS table,
-        indexdef,
-        unnest(indkey) = 0 AS is_expression
-      FROM pg_indexes
-      WHERE schemaname = 'public'
-      ORDER BY tablename, indexname
-    `);
+    // --- Indexes ---
+    let idxRes: any[] = [];
+    try {
+      const res = await q.query(`
+        SELECT
+          indexname AS name,
+          tablename AS table_name,
+          indexdef
+        FROM pg_indexes
+        WHERE schemaname = 'public'
+        ORDER BY tablename, indexname
+      `);
+      idxRes = res.rows;
+      if (isDebug) logger.info(`[fetchRichSchema] Found ${idxRes.length} indexes`);
+    } catch (err) {
+      errors.push(`indexes query failed: ${err}`);
+      logger.error("[fetchRichSchema] indexes query failed:", err);
+    }
 
+    if (errors.length > 0 && isDebug) {
+      logger.warn(`[fetchRichSchema] ${errors.length} query error(s):`, errors.join("; "));
+    }
+
+    // Build column map (always succeeds even if columnsRes is empty)
     const colMap: Record<string, ColumnInfo[]> = {};
     for (const row of columnsRes) {
       if (!colMap[row.table_name]) colMap[row.table_name] = [];
@@ -295,6 +339,7 @@ async function fetchRichSchema(clientOrStr: Client | string, sslRequired = true)
       });
     }
 
+    // Build tables (always succeeds even if tablesRes is empty)
     const tables: TableInfo[] = tablesRes.map((t: any) => ({
       name: t.table_name,
       schema: "public",
@@ -303,6 +348,14 @@ async function fetchRichSchema(clientOrStr: Client | string, sslRequired = true)
       row_estimate: t.row_estimate,
     }));
 
+    if (isDebug) {
+      logger.info(`[fetchRichSchema] Tables with columns: ${tables.length}`);
+      for (const t of tables) {
+        logger.info(`  ${t.name} (${t.type}) — ${t.columns.length} columns, row_estimate=${t.row_estimate}`);
+      }
+    }
+
+    // Build foreign keys
     const foreign_keys: ForeignKeyInfo[] = fkRes.map((fk: any) => ({
       constraint_name: fk.constraint_name,
       source_table: fk.source_table,
@@ -311,16 +364,21 @@ async function fetchRichSchema(clientOrStr: Client | string, sslRequired = true)
       target_column: fk.target_column,
     }));
 
+    // Build indexes — skip expression-based indexes by checking indexdef
+    // Expression indexes have double-parens like ((col+1)) in the column list.
+    // Strip WHERE clause first to avoid false positives from index conditions.
     const indexMap: Record<string, IndexInfo> = {};
     for (const row of idxRes) {
-      if (row.is_expression) continue;
+      const indexDefNoWhere = row.indexdef.replace(/WHERE.*$/i, "");
+      const isExpression = /\(\(/.test(indexDefNoWhere);
+      if (isExpression) continue;
       const match = row.indexdef.match(/CREATE\s+(UNIQUE\s+)?INDEX.*?ON\s+(?:\w+\.)?(\w+)\s+USING\s+(\w+)\s+\((.+?)\)/i);
       if (match) {
-        const idxName = `${row.table}.${row.name}`;
+        const idxName = `${row.table_name}.${row.name}`;
         if (!indexMap[idxName]) {
           indexMap[idxName] = {
             name: row.name,
-            table: row.table,
+            table: row.table_name,
             columns: [],
             unique: !!match[1],
             index_type: match[3],
@@ -330,6 +388,8 @@ async function fetchRichSchema(clientOrStr: Client | string, sslRequired = true)
         indexMap[idxName].columns.push(...cols);
       }
     }
+
+    if (isDebug) logger.info(`[fetchRichSchema] Built ${Object.keys(indexMap).length} indexes`);
 
     return { tables, foreign_keys, indexes: Object.values(indexMap) };
   } finally {

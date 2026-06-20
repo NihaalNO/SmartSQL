@@ -14,7 +14,7 @@ export default function SavedPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (!canSaveQueries()) router.replace("/query")
+    if (!canSaveQueries()) router.replace("/dashboard")
   }, [router])
 
   const load = () => {

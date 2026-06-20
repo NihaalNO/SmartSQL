@@ -1,19 +1,6 @@
 "use client"
 import Link from "next/link"
 import { useEffect, useRef, useState } from "react"
-import { useRouter } from "next/navigation"
-import { isLoggedIn, isAdmin } from "@/lib/auth"
-
-// ---------------------------------------------------------------------------
-// Auth redirect
-// ---------------------------------------------------------------------------
-
-function useAuthRedirect() {
-  const router = useRouter()
-  useEffect(() => {
-    if (isLoggedIn()) router.replace(isAdmin() ? "/moderator/dashboard" : "/query")
-  }, [router])
-}
 
 // ---------------------------------------------------------------------------
 // SQL code highlighting helper
@@ -345,8 +332,6 @@ function MetricBadge({ value, label, accent = "#14B8A6" }: { value: string; labe
 // ---------------------------------------------------------------------------
 
 export default function HomePage() {
-  useAuthRedirect()
-
   return (
     <div style={{ background: "#050816", color: "#F8FAFC", fontFamily: "Fira Sans, system-ui, sans-serif" }}>
       <style>{`

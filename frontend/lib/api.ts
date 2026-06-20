@@ -1,12 +1,18 @@
 import axios from "axios"
-import Cookies from "js-cookie"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+function getSessionToken(): string | null {
+  if (typeof window === "undefined") return null
+  const raw = sessionStorage.getItem("user")
+  if (!raw) return null
+  try { return JSON.parse(raw).access_token } catch { return null }
+}
 
 export const api = axios.create({ baseURL: API_URL })
 
 api.interceptors.request.use((config) => {
-  const token = Cookies.get("token")
+  const token = getSessionToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
@@ -15,10 +21,8 @@ api.interceptors.request.use((config) => {
 export const modApi = axios.create({ baseURL: API_URL })
 
 modApi.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const token = sessionStorage.getItem("mod_token")
-    if (token) config.headers.Authorization = `Bearer ${token}`
-  }
+  const token = getSessionToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
@@ -26,7 +30,7 @@ api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err.response?.status === 401) {
-      Cookies.remove("token")
+      sessionStorage.removeItem("user")
       if (typeof window !== "undefined") window.location.href = "/login"
     }
     return Promise.reject(err)

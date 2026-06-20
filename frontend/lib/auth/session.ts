@@ -1,5 +1,3 @@
-import Cookies from 'js-cookie'
-
 export interface AuthUser {
   user_id: number
   full_name: string
@@ -9,65 +7,35 @@ export interface AuthUser {
   email_verified: boolean
 }
 
-// Session keys
-const MAIN_TOKEN_KEY = 'token'
 const MAIN_USER_KEY = 'user'
-const MOD_TOKEN_KEY = 'mod_token'
 const MOD_USER_KEY = 'mod_user'
 
 /**
- * Main application authentication
+ * Main application authentication — sessionStorage only (cleared on tab close)
  */
 export function saveAuth(data: AuthUser) {
-  if (!data || !data.access_token) {
-    console.error('Invalid data passed to saveAuth:', data)
-    return
-  }
-
-  try {
-    // Set HTTP-only equivalent via cookie (JS accessible for SPA)
-    Cookies.set(MAIN_TOKEN_KEY, data.access_token, {
-      expires: 1, // 1 day
-      path: '/',
-      sameSite: 'lax'
-    })
-
-    // Store user data in sessionStorage (more secure than localStorage)
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(MAIN_USER_KEY, JSON.stringify(data))
-    }
-  } catch (error) {
-    console.error('Error saving auth data:', error)
-
-    // Fallback to direct cookie setting
-    try {
-      const cookieString = `${MAIN_TOKEN_KEY}=${data.access_token}; expires=${new Date(Date.now() + 86400000).toUTCString()}; path=/; samesite=lax`
-      document.cookie = cookieString
-
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem(MAIN_USER_KEY, JSON.stringify(data))
-      }
-    } catch (fallbackError) {
-      console.error('Fallback auth save also failed:', fallbackError)
-    }
+  if (!data || !data.access_token) return
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(MAIN_USER_KEY, JSON.stringify(data))
   }
 }
 
 export function getAuthUser(): AuthUser | null {
   if (typeof window === 'undefined') return null
-
   const raw = sessionStorage.getItem(MAIN_USER_KEY)
   return raw ? JSON.parse(raw) : null
 }
 
 export function getAuthToken(): string | null {
-  return Cookies.get(MAIN_TOKEN_KEY) ?? null
+  if (typeof window === 'undefined') return null
+  const raw = sessionStorage.getItem(MAIN_USER_KEY)
+  if (!raw) return null
+  try { return JSON.parse(raw).access_token } catch { return null }
 }
 
 export function clearAuth() {
   if (typeof window !== 'undefined') {
-    Cookies.remove(MAIN_TOKEN_KEY, { path: '/' })
-    sessionStorage.remove(MAIN_USER_KEY)
+    sessionStorage.removeItem(MAIN_USER_KEY)
   }
 }
 
@@ -88,12 +56,6 @@ export function saveModAuth(data: {
   if (typeof window === 'undefined') return
 
   try {
-    Cookies.set(MOD_TOKEN_KEY, data.access_token, {
-      expires: 1,
-      path: '/',
-      sameSite: 'lax'
-    })
-    sessionStorage.setItem(MOD_TOKEN_KEY, data.access_token)
     sessionStorage.setItem(MOD_USER_KEY, JSON.stringify({
       user_id: data.user_id,
       full_name: data.full_name,
@@ -108,7 +70,6 @@ export function saveModAuth(data: {
 
 export function getModUser() {
   if (typeof window === 'undefined') return null
-
   try {
     const raw = sessionStorage.getItem(MOD_USER_KEY)
     return raw ? JSON.parse(raw) : null
@@ -119,14 +80,14 @@ export function getModUser() {
 
 export function getModToken() {
   if (typeof window === 'undefined') return null
-  return sessionStorage.getItem(MOD_TOKEN_KEY)
+  const user = getModUser()
+  return user?.token ?? null
 }
 
 export function clearModAuth() {
-  if (typeof window === 'undefined') return
-  Cookies.remove(MOD_TOKEN_KEY, { path: '/' })
-  sessionStorage.removeItem(MOD_TOKEN_KEY)
-  sessionStorage.removeItem(MOD_USER_KEY)
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(MOD_USER_KEY)
+  }
 }
 
 export function isModAuthenticated(): boolean {
