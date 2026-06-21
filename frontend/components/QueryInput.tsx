@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/select"
 
 const PROVIDERS = [
-  { value: "groq", label: "Groq · llama-3.3-70b" },
+  { value: "groq", label: "Groq \u00B7 llama-3.3-70b" },
   { value: "gemini", label: "Gemini 1.5 Flash" },
   { value: "ollama", label: "Ollama (local)" },
 ]
@@ -40,21 +40,15 @@ export default function QueryInput({ onSubmit, loading }: Props) {
   }
 
   return (
-    <div className="rounded-lg border overflow-hidden" style={{
-      borderColor: focused ? "rgba(20,184,166,0.3)" : "rgba(148,163,184,0.1)",
-      background: "rgba(255,255,255,0.02)",
-      transition: "border-color 0.2s",
-    }}>
-      <div className="px-4 pt-3 pb-2.5 border-b flex flex-wrap gap-2" style={{ borderColor: "rgba(148,163,184,0.06)" }}>
-        <span className="text-xs self-center mr-1" style={{ color: "#64748B" }}>Try:</span>
+    <div className="mint-card overflow-hidden transition-colors duration-200"
+      style={{ borderColor: focused ? "var(--mint-green)" : undefined }}>
+      <div className="px-4 pt-3 pb-2.5 border-b border-border flex flex-wrap gap-2">
+        <span className="text-xs self-center mr-1 text-muted-foreground">Try:</span>
         {EXAMPLES.map((q) => (
           <button
             key={q}
             onClick={() => setQuestion(q)}
-            className="text-xs px-2.5 py-1 rounded-md border transition-colors"
-            style={{ borderColor: "rgba(20,184,166,0.15)", color: "#14B8A6", background: "rgba(20,184,166,0.06)" }}
-            onMouseEnter={e => { e.currentTarget.style.background = "rgba(20,184,166,0.12)" }}
-            onMouseLeave={e => { e.currentTarget.style.background = "rgba(20,184,166,0.06)" }}
+            className="cursor-pointer text-xs px-2.5 py-1 rounded-md border border-border text-muted-foreground bg-secondary hover:text-foreground transition-colors"
           >
             {q}
           </button>
@@ -67,44 +61,25 @@ export default function QueryInput({ onSubmit, loading }: Props) {
           onChange={(e) => setQuestion(e.target.value)}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder="Ask anything in plain English — e.g. 'Show me the top 5 users by saved queries'"
+          placeholder="Ask anything in plain English \u2014 e.g. 'Show me the top 5 users by saved queries'"
           rows={3}
-          className="w-full rounded-lg px-3 py-2.5 text-sm border transition-colors resize-none"
-          style={{
-            background: "rgba(0,0,0,0.25)",
-            borderColor: focused ? "rgba(20,184,166,0.3)" : "rgba(148,163,184,0.1)",
-            color: "#CBD5E1",
-          }}
+          className="w-full rounded-md px-4 py-3 text-sm border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/25 resize-none transition-colors duration-150"
           disabled={loading}
         />
 
         <div className="flex items-center gap-3">
-          <div className="relative" style={{ width: "180px" }}>
+          <div style={{ width: "180px" }}>
             <Select value={provider} onValueChange={setProvider}>
-              <SelectTrigger
-                className="w-full h-9 pl-3 pr-7 rounded-lg border text-xs transition-colors"
-                style={{
-                  background: "rgba(0,0,0,0.25)",
-                  borderColor: "rgba(148,163,184,0.1)",
-                  color: "#CBD5E1",
-                }}
-              >
+              <SelectTrigger className="w-full h-9 px-3 rounded-md border border-input bg-card text-xs text-foreground focus:outline-none focus:border-accent transition-colors">
                 <SelectValue placeholder="Select provider" />
               </SelectTrigger>
-              <SelectContent
-                className="rounded-lg border text-xs"
-                style={{
-                  background: "#0A1020",
-                  borderColor: "rgba(148,163,184,0.1)",
-                  color: "#CBD5E1",
-                }}
-              >
+              <SelectContent className="rounded-md border border-border bg-card text-xs text-foreground">
                 {PROVIDERS.map((p) => (
-                  <SelectItem key={p.value} value={p.value}
-                    className="cursor-pointer py-1.5 px-3"
-                    style={{ color: "#CBD5E1" }}
-                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(20,184,166,0.08)" }}
-                    onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}>
+                  <SelectItem
+                    key={p.value}
+                    value={p.value}
+                    className="cursor-pointer py-1.5 px-3 hover:bg-secondary focus:bg-secondary transition-colors"
+                  >
                     {p.label}
                   </SelectItem>
                 ))}
@@ -112,22 +87,19 @@ export default function QueryInput({ onSubmit, loading }: Props) {
             </Select>
           </div>
 
-          <p className="text-xs hidden sm:block" style={{ color: "#64748B" }}>
+          <p className="text-xs text-muted-foreground hidden sm:block">
             Ctrl+Enter to run
           </p>
 
           <button
             type="submit"
             disabled={loading || !question.trim()}
-            className="ml-auto inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all duration-200 disabled:opacity-40"
-            style={{ background: "#14B8A6" }}
-            onMouseEnter={e => { if (!loading) e.currentTarget.style.boxShadow = "0 0 12px rgba(20,184,166,0.3)" }}
-            onMouseLeave={e => { e.currentTarget.style.boxShadow = "none" }}
+            className="ml-auto inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-primary px-5 py-2 text-xs font-medium text-primary-foreground transition-colors duration-150 hover:bg-[var(--mint-charcoal)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             {loading ? (
               <>
                 <div className="w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
-                Generating…
+                Generating\u2026
               </>
             ) : (
               <>

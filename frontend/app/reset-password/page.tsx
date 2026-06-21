@@ -3,8 +3,10 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { authApi } from "@/lib/api"
 import toast from "react-hot-toast"
-import { Lock, Mail } from "lucide-react"
+import { Lock } from "lucide-react"
 import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 export const dynamic = 'force-dynamic'
 
@@ -32,7 +34,6 @@ export default function ResetPasswordPage() {
       toast.error('Passwords do not match')
       return
     }
-
     setLoading(true)
     try {
       await authApi.resetPassword({ token, password })
@@ -47,139 +48,66 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div
-      className="min-h-screen flex flex-col font-body-md text-on-surface"
-      style={{ backgroundColor: "#f9fafb" }}
-    >
-      {/* Navbar */}
-      <header
-        className="sticky top-0 w-full z-50 backdrop-blur-md border-b shadow-sm"
-        style={{ backgroundColor: "rgba(255,255,255,0.85)", borderColor: "rgba(229,231,235,0.15)" }}
-      >
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
         <div className="max-w-6xl mx-auto px-6 flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <Lock size={22} className="text-primary" />
-            <span className="text-lg font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>
-              SmartSQL
-            </span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <SmartSQLLogo size={32} className="text-sm" />
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium text-on-surface-variant hover:text-primary transition-colors">
-              Back to Sign In
-            </Link>
-          </div>
+          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Back to Sign In</Link>
         </div>
       </header>
 
-      {/* Main */}
-      <main className="flex-grow flex flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-lg space-y-6">
-
-          {/* Brand */}
+      <main className="flex-1 flex items-center justify-center px-4 py-16">
+        <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-on-surface tracking-tight mb-2" style={{ fontFamily: "Inter,sans-serif" }}>
-              Reset Password
-            </h1>
-            <p className="text-sm text-on-surface-variant">
-              Enter a new password for your account
-            </p>
+            <h1 className="heading-md text-foreground mb-1">Reset Password</h1>
+            <p className="body-sm text-muted-foreground">Enter a new password for your account</p>
           </div>
 
-          {/* Form Card */}
-          <div className="w-full bg-surface border border-outline rounded-xl shadow-sm overflow-hidden">
-            {/* Accent header strip */}
-            <div className="h-1.5 w-full" style={{ background: "#004ac6" }} />
-
-            <div className="p-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-
-                {/* Password */}
+          <div className="rounded border border-white/[0.06] overflow-hidden">
+            <div className="h-0.5 bg-primary" />
+            <div className="p-6">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-on-surface" htmlFor="password">
-                    New Password
-                  </label>
+                  <label className="text-xs font-medium text-foreground/80" htmlFor="password">New Password</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-                    <input
-                      id="password" type="password" required
-                      placeholder="••••••••"
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                    <input id="password" type="password" required placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                       value={password} onChange={e => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-surface border rounded-lg text-sm outline-none transition-all"
-                      style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "#004ac6"; e.currentTarget.style.boxShadow = `0 0 0 3px rgba(0,74,198,0.3)` }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "" }}
+                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
                     />
                   </div>
-                  <p className="text-sm text-on-surface-variant mt-1">
-                    Password must be at least 8 characters with uppercase, lowercase, number, and special character
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Min 8 characters with uppercase, lowercase, number & special char</p>
                 </div>
 
-                {/* Confirm Password */}
                 <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-on-surface" htmlFor="confirm_password">
-                    Confirm Password
-                  </label>
+                  <label className="text-xs font-medium text-foreground/80" htmlFor="confirm_password">Confirm Password</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top/2 -translate-y-1/2 text-on-surface-variant" />
-                    <input
-                      id="confirm_password" type="password" required
-                      placeholder="••••••••"
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                    <input id="confirm_password" type="password" required placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                       value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 bg-surface border rounded-lg text-sm outline-none transition-all"
-                      style={{ borderColor: "#e5e7eb" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = "#004ac6"; e.currentTarget.style.boxShadow = `0 0 0 3px rgba(0,74,198,0.3)` }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.boxShadow = "" }}
+                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
                     />
                   </div>
                   {password !== confirmPassword && password !== "" && (
-                    <p className="text-red-500 text-sm mt-1">
-                      Passwords do not match
-                    </p>
+                    <p className="text-xs text-destructive mt-1">Passwords do not match</p>
                   )}
                 </div>
 
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{ background: "#004ac6" }}
-                  onMouseEnter={e => { if (!loading) { e.currentTarget.style.transform = "translateY(-1px)"; e.currentTarget.style.boxShadow = `0 8px 20px -4px rgba(0,74,198,0.3)` } }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "" }}
-                >
-                  {loading ? "Resetting…" : "Reset Password"}
-                </button>
+                <Button type="submit" disabled={loading} variant="primary" className="w-full h-11">
+                  {loading ? "Resetting..." : "Reset Password"}
+                </Button>
               </form>
             </div>
           </div>
 
-          {/* Footer Links */}
-          <div className="mt-8 text-center text-sm text-on-surface-variant">
-            <p>
-              Remember your password?{" "}
-              <Link href="/login" className="font-semibold hover:underline" style={{ color: "#004ac6" }}>
-                Sign in
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-sm text-center text-muted-foreground">
+            Remember your password?{" "}
+            <Link href="/login" className="font-medium text-primary">Sign in</Link>
+          </p>
         </div>
       </main>
-
-      {/* Footer */}
-      <footer className="w-full py-6 bg-surface border-t border-outline">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
-          <span className="text-base font-bold text-on-surface" style={{ fontFamily: "Inter,sans-serif" }}>SmartSQL</span>
-          <div className="flex flex-wrap justify-center gap-6">
-            {["Privacy Policy", "Terms of Service", "Security", "Status"].map(l => (
-              <Link key={l} href="#" className="text-xs text-on-secondary-container hover:text-on-surface transition-colors">
-                {l}
-              </Link>
-            ))}
-          </div>
-          <p className="text-xs text-on-secondary-container opacity-60">© 2025 SmartSQL Analytics.</p>
-        </div>
-      </footer>
     </div>
   )
 }

@@ -1,10 +1,12 @@
 "use client"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Lock, User, Eye, EyeOff, ArrowRight, Database, HelpCircle, Shield } from "lucide-react"
+import { Lock, User, Eye, EyeOff, ArrowRight, Shield } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { saveModAuth, isModLoggedIn } from "@/lib/modAuth"
 import { getAndClearRedirectUrl } from "@/lib/auth/session"
+import { Button } from "@/components/ui/button"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 export const dynamic = 'force-dynamic'
 
@@ -56,7 +58,7 @@ export default function ModeratorLoginPage() {
     setLoading(true); setError(null)
     try {
       const res = await authApi.adminLogin(name.trim(), code)
-      if (res.role !== "admin") { setError("Access denied — this account does not have admin privileges."); return }
+      if (res.role !== "admin") { setError("Access denied \u2014 this account does not have admin privileges."); return }
       saveModAuth(res); setRedirecting(true)
       const redirectUrl = searchParams.get("redirect") || getAndClearRedirectUrl() || "/moderator/dashboard"
       router.replace(redirectUrl)
@@ -72,35 +74,33 @@ export default function ModeratorLoginPage() {
 
   if (redirecting) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#050816" }}>
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }} />
-          <p className="text-sm" style={{ color: "#64748B" }}>Redirecting to panel…</p>
+          <SmartSQLLogo variant="icon" size={32} className="animate-pulse" />
+          <p className="text-sm text-muted-foreground">Redirecting to panel\u2026</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "#050816" }}>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <main className="w-full max-w-md animate-fade-in-up">
-        <div className="rounded-xl overflow-hidden" style={{ background: "rgba(17,24,39,0.95)", border: "1px solid rgba(148,163,184,0.08)" }}>
+        <div className="rounded border border-white/[0.06] overflow-hidden bg-card">
           <div className="p-8">
             <div className="flex flex-col items-center mb-8 text-center">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4" style={{ background: "rgba(20,184,166,0.1)" }}>
-                <Database size={26} style={{ color: "#14B8A6" }} />
-              </div>
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "#F8FAFC", fontFamily: "'Fira Code', 'JetBrains Mono', monospace" }}>SmartSQL</h1>
-              <p className="text-sm mt-1" style={{ color: "#64748B" }}>Enterprise Database Identity</p>
+              <SmartSQLLogo size={44} className="mb-4 text-lg" />
+              <p className="body-sm text-muted-foreground mt-1">Admin Panel</p>
             </div>
 
             <div className="mb-6">
-              <h2 className="text-lg font-semibold" style={{ color: "#F8FAFC" }}>Sign In</h2>
-              <p className="text-sm mt-0.5" style={{ color: "#64748B" }}>Enter your credentials to access the admin dashboard.</p>
+              <h2 className="text-sm font-medium text-foreground">Sign In</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Enter your credentials to access the admin dashboard.</p>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2.5 rounded-lg px-4 py-3 mb-5 text-sm" style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444" }}>
+              <div className="flex items-start gap-2.5 rounded px-4 py-3 mb-5 text-sm"
+                style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#EF4444" }}>
                 <Shield size={15} className="shrink-0 mt-0.5" />
                 <span>
                   {error}
@@ -111,97 +111,60 @@ export default function ModeratorLoginPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold uppercase tracking-widest" style={{ color: "#64748B" }}>Username or ID</label>
+                <label className="label-sm text-muted-foreground">Username or ID</label>
                 <div className="relative">
-                  <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#64748B" }} />
+                  <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
                   <input
                     ref={nameRef}
                     type="text"
                     value={name}
                     onChange={e => handleNameChange(e.target.value)}
-                    placeholder="dba_specialist"
+                    placeholder="admin"
                     required
                     disabled={loading || isLocked}
                     autoComplete="username"
-                    className="surface-input w-full pl-12 pr-4 py-3 disabled:opacity-50"
-                    style={{ borderColor: error && !isLocked ? "rgba(239,68,68,0.4)" : undefined }}
+                    className="w-full pl-9 pr-4 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 disabled:opacity-50 transition-all duration-150"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#64748B" }}>Credentials</label>
-                  <button type="button" className="text-xs font-semibold transition-colors" style={{ color: "#14B8A6" }}>
-                    Forgot Password?
-                  </button>
-                </div>
+                <label className="label-sm text-muted-foreground">Access Code</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: "#64748B" }} />
+                  <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
                   <input
                     type={showCode ? "text" : "password"}
                     value={code}
                     onChange={e => handleCodeChange(e.target.value)}
-                    placeholder="••••••••••••"
+                    placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
                     required
                     disabled={loading || isLocked}
                     autoComplete="current-password"
-                    className="surface-input w-full pl-12 pr-12 py-3 disabled:opacity-50"
-                    style={{ borderColor: error && !isLocked ? "rgba(239,68,68,0.4)" : undefined }}
+                    className="w-full pl-9 pr-10 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 disabled:opacity-50 transition-all duration-150"
                   />
-                  <button type="button" tabIndex={-1} onClick={() => setShowCode(s => !s)} disabled={loading || isLocked} className="absolute right-4 top-1/2 -translate-y-1/2 disabled:pointer-events-none" style={{ color: "#64748B" }}>
+                  <button type="button" tabIndex={-1} onClick={() => setShowCode(s => !s)} disabled={loading || isLocked} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                     {showCode ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <input type="checkbox" id="remember" className="w-4 h-4 rounded accent-[#14B8A6]" />
-                <label htmlFor="remember" className="text-sm cursor-pointer select-none" style={{ color: "#64748B" }}>Stay authenticated for 24h</label>
-              </div>
-
               {attempts > 0 && !isLocked && (
                 <div className="flex items-center gap-1.5">
                   {Array.from({ length: MAX_ATTEMPTS }).map((_, i) => (
-                    <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300" style={{ background: i < attempts ? "#EF4444" : "rgba(255,255,255,0.08)" }} />
+                    <div key={i} className="h-1 flex-1 rounded-full transition-all duration-300"
+                      style={{ background: i < attempts ? "#EF4444" : "rgba(255,255,255,0.08)" }} />
                   ))}
                 </div>
               )}
 
-              <div className="pt-2 space-y-4">
-                <button
-                  type="submit"
-                  disabled={loading || isLocked || !name.trim() || !code}
-                  className="w-full py-3 rounded-lg text-sm font-semibold transition-all active:scale-[0.98] disabled:cursor-not-allowed flex items-center justify-center gap-2 text-white disabled:opacity-55"
-                  style={{ background: "#14B8A6" }}
-                >
-                  {loading && <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />}
-                  {isLocked ? `Locked — wait ${lockRemaining}s` : loading ? "Authenticating…" : "Authorize Access"}
-                  {!loading && !isLocked && <ArrowRight size={16} />}
-                </button>
-
-                <div className="relative flex items-center py-1">
-                  <div className="flex-grow border-t" style={{ borderColor: "rgba(148,163,184,0.1)" }} />
-                  <span className="mx-4 text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: "#64748B" }}>New deployment?</span>
-                  <div className="flex-grow border-t" style={{ borderColor: "rgba(148,163,184,0.1)" }} />
-                </div>
-
-                <button type="button"
-                  className="w-full py-3 rounded-lg text-sm font-semibold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                  style={{ color: "#F8FAFC", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(148,163,184,0.1)" }}>
-                  <HelpCircle size={16} />
-                  Request Access
-                </button>
+              <div className="pt-2">
+                <Button type="submit" disabled={loading || isLocked || !name.trim() || !code} variant="primary" className="w-full h-11">
+                  {loading ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /> Authenticating\u2026</>
+                    : isLocked ? `Locked \u2014 wait ${lockRemaining}s`
+                      : <><ArrowRight size={16} /> Authorize Access</>}
+                </Button>
               </div>
             </form>
-          </div>
-
-          <div style={{ borderTop: "1px solid rgba(148,163,184,0.08)" }}>
-            <footer className="px-8 py-4 text-center">
-              <p className="text-xs" style={{ color: "#64748B" }}>
-                Secured by <span className="font-bold" style={{ color: "#F8FAFC" }}>SmartSQL IAM v2.4.0</span>
-              </p>
-            </footer>
           </div>
         </div>
       </main>

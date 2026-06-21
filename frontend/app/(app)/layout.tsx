@@ -4,10 +4,10 @@ import { Suspense, useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import Sidebar from "@/components/Sidebar"
 import { getAuthToken } from "@/lib/auth/session"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
-const PROTECTED_PATHS = ["/dashboard", "/query", "/saved", "/live-db", "/history"]
+const PROTECTED_PATHS = ["/dashboard", "/query", "/saved", "/live-db", "/history", "/settings"]
 
-// Client-side auth guard — no persisted cookies, only sessionStorage (dies on tab close)
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [checking, setChecking] = useState(true)
   const pathname = usePathname()
@@ -24,12 +24,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (checking) {
     return (
-      <div className="flex min-h-screen items-center justify-center" style={{ background: "#050816" }}>
-        <div className="text-center">
-          <div
-            className="w-5 h-5 rounded-full border-2 animate-spin mx-auto"
-            style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }}
-          />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <SmartSQLLogo variant="icon" size={36} className="animate-pulse" />
+          <p className="text-xs text-muted-foreground">Preparing SmartSQL...</p>
         </div>
       </div>
     )

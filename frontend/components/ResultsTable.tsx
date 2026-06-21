@@ -68,26 +68,20 @@ export default function ResultsTable({
   const totalPages = tanstackTable.getPageCount()
 
   return (
-    <div className="rounded-lg overflow-hidden border" style={{
-      borderColor: "rgba(148,163,184,0.1)",
-      background: "rgba(255,255,255,0.02)",
-    }}>
-      <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: "rgba(148,163,184,0.06) "}}>
+    <div className="mint-table">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-card">
         <div className="flex items-center gap-3">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#14B8A6" strokeWidth="1.5">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--mint-green-deep)" strokeWidth="1.5">
             <path d="M3 3h18v4H3z" /><path d="M3 10h18v4H3z" /><path d="M3 17h18v4H3z" />
           </svg>
-          <span className="text-sm font-medium text-[#CBD5E1]">Results</span>
-          <span className="text-xs" style={{ color: "#64748B" }}>
-            {rowCount.toLocaleString()} row{rowCount !== 1 ? "s" : ""} · {executionTimeMs}ms
+          <span className="text-sm font-medium text-foreground/80">Results</span>
+          <span className="text-xs text-muted-foreground">
+            {rowCount.toLocaleString()} row{rowCount !== 1 ? "s" : ""} \u00B7 {executionTimeMs}ms
           </span>
         </div>
         <button
           onClick={downloadCSV}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-all"
-          style={{ borderColor: "rgba(148,163,184,0.1)", color: "#64748B" }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.2)"; e.currentTarget.style.color = "#CBD5E1" }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.1)"; e.currentTarget.style.color = "#64748B" }}
+          className="flex cursor-pointer items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
         >
           <Download size={12} />
           Export CSV
@@ -98,12 +92,11 @@ export default function ResultsTable({
         <Table>
           <TableHeader>
             {tanstackTable.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} style={{ borderColor: "rgba(148,163,184,0.06)" }}>
+              <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    className="text-left text-xs font-medium uppercase tracking-wider whitespace-nowrap px-4 py-3"
-                    style={{ color: "#64748B" }}
+                    className="whitespace-nowrap px-4 py-3"
                   >
                     {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                   </TableHead>
@@ -117,17 +110,15 @@ export default function ResultsTable({
               return (
                 <TableRow
                   key={row.id}
-                  style={{ borderColor: "rgba(148,163,184,0.04)" }}
-                  className="transition-colors"
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(20,184,166,0.04)"}
-                  onMouseLeave={e => e.currentTarget.style.background = isEven ? "rgba(255,255,255,0.015)" : "transparent"}
+                  className="transition-colors hover:bg-secondary"
+                  style={{ background: isEven ? "var(--mint-surface-soft)" : "transparent" }}
                 >
                   {row.getVisibleCells().map((cell) => {
                     const value = cell.getValue()
                     return (
-                      <TableCell key={cell.id} className="px-4 py-2.5 text-sm max-w-xs truncate" style={{ color: "#CBD5E1" }}>
+                      <TableCell key={cell.id} className="px-4 py-2.5 text-sm max-w-xs truncate text-foreground/80">
                         {value === null || value === undefined ? (
-                          <span className="italic" style={{ color: "rgba(148,163,184,0.3)" }}>null</span>
+                          <span className="italic text-muted-foreground/40">null</span>
                         ) : (
                           String(value)
                         )}
@@ -142,28 +133,22 @@ export default function ResultsTable({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-4 py-2.5 border-t" style={{ borderColor: "rgba(148,163,184,0.06)" }}>
-          <span className="text-xs" style={{ color: "#64748B" }}>
+        <div className="flex items-center justify-between px-4 py-2.5 border-t border-border">
+          <span className="text-xs text-muted-foreground">
             Page {currentPage} of {totalPages}
           </span>
           <div className="flex gap-1">
             <button
               onClick={() => tanstackTable.previousPage()}
               disabled={!tanstackTable.getCanPreviousPage()}
-              className="p-1.5 rounded transition-colors disabled:opacity-30"
-              style={{ color: "#64748B" }}
-              onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}
+              className="cursor-pointer p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:cursor-not-allowed disabled:opacity-30"
             >
               <ChevronLeft size={14} />
             </button>
             <button
               onClick={() => tanstackTable.nextPage()}
               disabled={!tanstackTable.getCanNextPage()}
-              className="p-1.5 rounded transition-colors disabled:opacity-30"
-              style={{ color: "#64748B" }}
-              onMouseEnter={e => { if (!e.currentTarget.disabled) e.currentTarget.style.background = "rgba(255,255,255,0.05)" }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent" }}
+              className="cursor-pointer p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors disabled:cursor-not-allowed disabled:opacity-30"
             >
               <ChevronRight size={14} />
             </button>

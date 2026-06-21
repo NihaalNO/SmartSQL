@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import {
-  Zap, AlertTriangle, Eye, EyeOff, Info, Database,
+  Zap, AlertTriangle, Eye, EyeOff, Database,
   CheckCircle, XCircle, Loader2, Layers, Sparkles, Shield, FileText,
 } from "lucide-react"
 import toast from "react-hot-toast"
@@ -14,14 +14,13 @@ import SQLPreview from "@/components/SQLPreview"
 import ResultsTable from "@/components/ResultsTable"
 import ChartView from "@/components/ChartView"
 import type { QueryResult, SchemaVisualization, SchemaAnalysis, SchemaDocumentation } from "@/types"
+import { Button } from "@/components/ui/button"
 
 const SchemaTab = dynamic(() => import("@/components/LiveDbSchemaTabs").then(m => ({ default: m.SchemaTab })), { ssr: false })
 const SchemaHealthTabView = dynamic(() => import("@/components/LiveDbSchemaTabs").then(m => ({ default: m.SchemaHealthTabView })), { ssr: false })
 const AiInsightsTabView = dynamic(() => import("@/components/LiveDbSchemaTabs").then(m => ({ default: m.AiInsightsTabView })), { ssr: false })
 const DocumentationTabView = dynamic(() => import("@/components/LiveDbSchemaTabs").then(m => ({ default: m.DocumentationTabView })), { ssr: false })
 const SchemaStyles = dynamic(() => import("@/components/LiveDbSchemaTabs").then(m => ({ default: m.SchemaStyles })), { ssr: false })
-
-// ── Types ────────────────────────────────────────────────────────────────────
 
 interface CredForm {
   db_host: string
@@ -36,10 +35,10 @@ type TestPhase = "idle" | "resolving" | "connecting" | "ssl" | "schema" | "done"
 
 const PHASE_LABELS: Record<TestPhase, string> = {
   idle: "Ready",
-  resolving: "Resolving host…",
-  connecting: "Establishing connection…",
-  ssl: "Verifying SSL certificate…",
-  schema: "Discovering tables and columns…",
+  resolving: "Resolving host\u2026",
+  connecting: "Establishing connection\u2026",
+  ssl: "Verifying SSL certificate\u2026",
+  schema: "Discovering tables and columns\u2026",
   done: "Connected successfully",
   error: "Connection failed",
 }
@@ -54,10 +53,6 @@ const APP_TABS: { id: AppTab; label: string; icon: typeof Layers }[] = [
   { id: "docs", label: "Documentation", icon: FileText },
 ]
 
-const SCHEMA_TABS: AppTab[] = ["schema", "health", "insights", "docs"]
-
-// ── Page ─────────────────────────────────────────────────────────────────────
-
 export default function LiveDbPage() {
   const router = useRouter()
   const [connected, setConnected] = useState(false)
@@ -69,15 +64,12 @@ export default function LiveDbPage() {
   const [result, setResult] = useState<QueryResult | null>(null)
   const [connError, setConnError] = useState<string | null>(null)
 
-  // Connection test
   const [testing, setTesting] = useState(false)
   const [testPhase, setTestPhase] = useState<TestPhase>("idle")
   const [testResult, setTestResult] = useState<{ status: string; message: string; table_count?: number; tables?: string[] } | null>(null)
 
-  // Active tab
   const [activeTab, setActiveTab] = useState<AppTab>("overview")
 
-  // Schema data
   const [viz, setViz] = useState<SchemaVisualization | null>(null)
   const [analysis, setAnalysis] = useState<SchemaAnalysis | null>(null)
   const [doc, setDoc] = useState<SchemaDocumentation | null>(null)
@@ -100,7 +92,7 @@ export default function LiveDbPage() {
     try {
       const raw = sessionStorage.getItem(cacheKey)
       if (raw) { cached = JSON.parse(raw) as SchemaVisualization }
-    } catch { /* ignore stale cache */ }
+    } catch {}
 
     if (cached) {
       setViz(cached)
@@ -112,7 +104,7 @@ export default function LiveDbPage() {
       const res = await schemaApi.externalVisualize(data)
       const viz = res.visualization as SchemaVisualization
       setViz(viz)
-      try { sessionStorage.setItem(cacheKey, JSON.stringify(viz)) } catch { /* quota exceeded */ }
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(viz)) } catch {}
     } catch (err: unknown) {
       setSchemaError((err as Error)?.message || "Schema visualization failed")
     }
@@ -124,9 +116,7 @@ export default function LiveDbPage() {
       const res = await schemaApi.externalAnalyze(data)
       if (res.analysis) setAnalysis(res.analysis)
       if (res.documentation) setDoc(res.documentation)
-    } catch {
-      /* AI/doc failure is non-fatal — schema already rendered */
-    }
+    } catch {}
     setAiLoading(false)
     setDocLoading(false)
   }, [])
@@ -172,9 +162,7 @@ export default function LiveDbPage() {
         setCreds(data)
         setConnected(true)
         setActiveTab("schema")
-
         discoverSchema(data)
-
         toast.success(res.message || "Connected successfully")
       } else {
         setTestPhase("error")
@@ -224,124 +212,115 @@ export default function LiveDbPage() {
     a.click(); URL.revokeObjectURL(url)
   }
 
-  // ── Render ─────────────────────────────────────────────────────────────────
-
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-5 animate-fade-in-up">
+    <div className="mint-page">
       <SchemaStyles />
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-bold text-[#F8FAFC] flex items-center gap-2">
-            <Zap size={18} style={{ color: "#F59E0B" }} />
-            Live DB Mode
-          </h1>
-          <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>
+          <p className="mint-kicker">Live database</p>
+          <h1 className="mint-title mt-2">Live DB Mode</h1>
+          <p className="mint-subtitle mt-2">
             Connect any PostgreSQL database for querying, schema visualization, and AI analysis.
           </p>
         </div>
       </div>
 
       {connError && (
-        <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)" }}>
-          <AlertTriangle size={16} style={{ color: "#EF4444" }} className="shrink-0 mt-0.5" />
-          <div className="text-sm" style={{ color: "#EF4444" }}>
-            <p className="font-semibold mb-1">Query error</p>
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 flex gap-3">
+          <AlertTriangle size={16} className="text-destructive shrink-0 mt-0.5" />
+          <div className="text-sm text-destructive">
+            <p className="font-medium mb-1">Query error</p>
             <p className="text-xs opacity-80">{connError}</p>
-            <button onClick={() => setConnError(null)} className="text-xs underline mt-1 opacity-70 hover:opacity-100" style={{ color: "#EF4444" }}>Dismiss</button>
+            <button onClick={() => setConnError(null)} className="text-xs underline mt-1 opacity-70 hover:opacity-100">Dismiss</button>
           </div>
         </div>
       )}
 
-      {/* Connection status bar (when connected) */}
       {connected && creds && (
-        <div className="rounded-lg border p-3 flex items-center justify-between" style={{ borderColor: "rgba(34,197,94,0.15)", background: "rgba(34,197,94,0.04)" }}>
+        <div className="mint-soft p-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="w-2 h-2 rounded-full bg-[#22C55E] animate-pulse-dot" />
-            <span className="text-sm font-medium" style={{ color: "#22C55E" }}>
+            <span className="w-2 h-2 rounded-full bg-accent animate-pulse-dot" />
+            <span className="text-sm font-medium text-[var(--mint-green-deep)]">
               Connected to <code className="font-mono">{creds.db_host}/{creds.db_name}</code>
-              {creds.ssl_required && <span className="ml-2 text-xs px-1.5 py-0.5 rounded" style={{ background: "rgba(34,197,94,0.15)" }}>SSL</span>}
+              {creds.ssl_required && <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-accent/15">SSL</span>}
             </span>
           </div>
-          <button onClick={disconnect} className="text-xs" style={{ color: "#EF4444" }}>Disconnect</button>
+          <button onClick={disconnect} className="text-xs text-destructive">Disconnect</button>
         </div>
       )}
 
-      {/* Connection form (not connected, not testing, no error) */}
       {!connected && !testing && testPhase !== "error" && (
         <>
-          <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(245,158,11,0.15)", background: "rgba(245,158,11,0.04)" }}>
-            <AlertTriangle size={16} style={{ color: "#F59E0B" }} className="shrink-0 mt-0.5" />
-            <div className="text-sm" style={{ color: "#F59E0B" }}>
-              <p className="font-medium">Ephemeral session — credentials are never saved</p>
-              <p className="text-xs mt-1 opacity-80">Your password is held in memory only for this browser session.</p>
+          <div className="rounded-lg border border-warning/20 bg-warning/10 p-3 flex gap-2.5">
+            <AlertTriangle size={14} className="text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-400">
+              <p className="font-medium">Ephemeral session &mdash; credentials are never saved</p>
+              <p className="mt-0.5 opacity-80">Your password is held in memory only for this browser session.</p>
             </div>
           </div>
-          <div className="rounded-lg border p-5" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
-            <h2 className="text-sm font-semibold text-[#CBD5E1] mb-4 flex items-center gap-2">
-              <Database size={14} style={{ color: "#14B8A6" }} />
+          <div className="mint-card p-6">
+            <h2 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
+              <Database size={14} className="text-primary" />
               PostgreSQL Connection Details
             </h2>
             <form onSubmit={handleSubmit(testAndConnect)} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Host</label>
-                  <input {...register("db_host", { required: "Required" })} placeholder="db.<project-ref>.supabase.co"
-                    className="surface-input w-full px-3 py-2 text-sm" style={{ borderColor: "rgba(148,163,184,0.15)" }} />
-                  {errors.db_host && <p className="text-xs mt-1" style={{ color: "#EF4444" }}>{errors.db_host.message}</p>}
+                  <label className="label-sm text-foreground/80 mb-1 block">Host</label>
+                  <input {...register("db_host", { required: "Required" })} placeholder="db.&lt;project-ref&gt;.supabase.co"
+                    className="mint-input w-full px-4 py-2 text-sm" />
+                  {errors.db_host && <p className="text-xs mt-1 text-destructive">{errors.db_host.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Port</label>
+                  <label className="label-sm text-foreground/80 mb-1 block">Port</label>
                   <input {...register("db_port", { required: true, valueAsNumber: true })} type="number"
-                    className="surface-input w-full px-3 py-2 text-sm" style={{ borderColor: "rgba(148,163,184,0.15)" }} />
+                    className="mint-input w-full px-4 py-2 text-sm" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Database</label>
+                  <label className="label-sm text-foreground/80 mb-1 block">Database</label>
                   <input {...register("db_name", { required: "Required" })} placeholder="postgres"
-                    className="surface-input w-full px-3 py-2 text-sm" style={{ borderColor: "rgba(148,163,184,0.15)" }} />
-                  {errors.db_name && <p className="text-xs mt-1" style={{ color: "#EF4444" }}>{errors.db_name.message}</p>}
+                    className="mint-input w-full px-4 py-2 text-sm" />
+                  {errors.db_name && <p className="text-xs mt-1 text-destructive">{errors.db_name.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">User</label>
+                  <label className="label-sm text-foreground/80 mb-1 block">User</label>
                   <input {...register("db_user", { required: "Required" })} placeholder="postgres"
-                    className="surface-input w-full px-3 py-2 text-sm" style={{ borderColor: "rgba(148,163,184,0.15)" }} />
-                  {errors.db_user && <p className="text-xs mt-1" style={{ color: "#EF4444" }}>{errors.db_user.message}</p>}
+                    className="mint-input w-full px-4 py-2 text-sm" />
+                  {errors.db_user && <p className="text-xs mt-1 text-destructive">{errors.db_user.message}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#CBD5E1] mb-1">Password</label>
+                  <label className="label-sm text-foreground/80 mb-1 block">Password</label>
                   <div className="relative">
-                    <input {...register("db_password", { required: "Required" })} type={showPw ? "text" : "password"} placeholder="••••••••"
-                      className="surface-input w-full px-3 py-2 pr-9 text-sm" style={{ borderColor: "rgba(148,163,184,0.15)" }} />
-                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2" style={{ color: "#64748B" }}>
+                    <input {...register("db_password", { required: "Required" })} type={showPw ? "text" : "password"} placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                      className="mint-input w-full px-4 py-2 pr-9 text-sm" />
+                    <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground">
                       {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
                   </div>
-                  {errors.db_password && <p className="text-xs mt-1" style={{ color: "#EF4444" }}>{errors.db_password.message}</p>}
+                  {errors.db_password && <p className="text-xs mt-1 text-destructive">{errors.db_password.message}</p>}
                 </div>
                 <div className="col-span-2 flex items-center gap-2">
-                  <input {...register("ssl_required")} type="checkbox" id="ssl_required" className="accent-[#14B8A6]" />
-                  <label htmlFor="ssl_required" className="text-xs cursor-pointer" style={{ color: "#CBD5E1" }}>Require SSL</label>
+                  <input {...register("ssl_required")} type="checkbox" id="ssl_required" className="accent-primary" />
+                  <label htmlFor="ssl_required" className="text-xs text-foreground/80 cursor-pointer">Require SSL</label>
                 </div>
               </div>
-              <button type="submit" disabled={testing}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded text-xs font-semibold text-white transition-all disabled:opacity-50"
-                style={{ background: "#14B8A6" }}>
-                {testing ? <Loader2 size={13} className="animate-spin" /> : <Database size={13} />}
-                {testing ? "Testing connection…" : "Test & Connect"}
-              </button>
+              <Button type="submit" disabled={testing} variant="primary" size="sm">
+                {testing ? <><Loader2 size={13} className="animate-spin" /> Testing connection&hellip;</> : <><Database size={13} /> Test &amp; Connect</>}
+              </Button>
             </form>
           </div>
         </>
       )}
 
-      {/* Connection test progress */}
       {(testing || testPhase === "done" || testPhase === "error") && (
-        <div className="rounded-lg border p-5 space-y-3" style={{
-          borderColor: testPhase === "done" ? "rgba(34,197,94,0.15)" : testPhase === "error" ? "rgba(239,68,68,0.2)" : "rgba(148,163,184,0.08)",
-          background: testPhase === "done" ? "rgba(34,197,94,0.04)" : testPhase === "error" ? "rgba(239,68,68,0.04)" : "rgba(255,255,255,0.02)",
-        }}>
-          <div className="text-sm font-semibold flex items-center gap-2" style={{ color: testPhase === "done" ? "#22C55E" : testPhase === "error" ? "#EF4444" : "#CBD5E1" }}>
+        <div className="mint-card p-5 space-y-3"
+          style={{
+            borderColor: testPhase === "done" ? "var(--mint-green)" : testPhase === "error" ? "var(--mint-error)" : "var(--mint-hairline)",
+            background: "var(--mint-canvas)",
+          }}>
+          <div className="text-sm font-medium flex items-center gap-2"
+            style={{ color: testPhase === "done" ? "var(--mint-green-deep)" : testPhase === "error" ? "var(--mint-error)" : "var(--mint-ink)" }}>
             {testPhase === "done" ? <CheckCircle size={16} /> : testPhase === "error" ? <XCircle size={16} /> : <Loader2 size={16} className="animate-spin" />}
             {PHASE_LABELS[testPhase]}
           </div>
@@ -353,22 +332,22 @@ export default function LiveDbPage() {
               const phaseDone = testPhase === "done"
               const phaseErr = testPhase === "error"
               const isPast = phaseDone || phaseErr || (!(testPhase === phase) && curIdx > idx)
-              const col = isPast ? (phaseErr ? "#64748B" : "#22C55E") : testPhase === phase ? "#F8FAFC" : "#64748B"
+              const col = isPast ? (phaseErr ? "var(--mint-steel)" : "var(--mint-green-deep)") : testPhase === phase ? "var(--mint-ink)" : "var(--mint-steel)"
               return (
                 <div key={phase} className="flex items-center gap-2" style={{ color: col }}>
-                  {isPast && !phaseErr ? <CheckCircle size={12} style={{ color: "#22C55E" }} />
-                    : testPhase === phase ? <Loader2 size={12} className="animate-spin" style={{ color: "#60A5FA" }} />
-                      : <div className="w-3 h-3 rounded-full border" style={{ borderColor: "rgba(148,163,184,0.2)" }} />}
+                  {isPast && !phaseErr ? <CheckCircle size={12} style={{ color: "var(--mint-green-deep)" }} />
+                    : testPhase === phase ? <Loader2 size={12} className="animate-spin text-accent" />
+                      : <div className="w-3 h-3 rounded-full border border-border" />}
                   <span>{PHASE_LABELS[phase]}</span>
                 </div>
               )
             })}
           </div>
           {testPhase === "done" && testResult?.table_count != null && (
-            <div className="pt-2 text-xs" style={{ color: "#64748B" }}>
-              <p>Found <strong style={{ color: "#22C55E" }}>{testResult.table_count}</strong> table(s)</p>
+            <div className="pt-2 text-xs text-muted-foreground">
+              <p>Found <strong className="text-[var(--mint-green-deep)]">{testResult.table_count}</strong> table(s)</p>
               {testResult.tables && testResult.tables.length > 0 && (
-                <p className="font-mono mt-1" style={{ color: "#F8FAFC" }}>
+                <p className="font-mono mt-1 text-foreground/80">
                   {testResult.tables.slice(0, 6).join(", ")}{testResult.tables.length > 6 ? ` +${testResult.tables.length - 6} more` : ""}
                 </p>
               )}
@@ -376,25 +355,24 @@ export default function LiveDbPage() {
           )}
           {testPhase === "error" && testResult && (
             <div className="pt-2 text-xs space-y-1">
-              <p style={{ color: "#EF4444" }}>{testResult.message}</p>
+              <p className="text-destructive">{testResult.message}</p>
               <button onClick={() => { setTestPhase("idle"); setTestResult(null) }}
-                className="text-xs underline mt-2 opacity-70 hover:opacity-100" style={{ color: "#EF4444" }}>Try again</button>
+                className="text-xs underline mt-2 opacity-70 hover:opacity-100 text-destructive">Try again</button>
             </div>
           )}
         </div>
       )}
 
-      {/* Connected — tabs */}
       {connected && creds && (
         <div className="space-y-5">
-          {/* Tab bar */}
-          <div className="flex items-center gap-1 rounded-lg bg-[#0F172A] border border-white/[0.08] p-1 w-fit">
+          <div className="flex items-center gap-1 rounded-full bg-secondary p-1 w-fit">
             {APP_TABS.map((tab) => {
               const Icon = tab.icon
+              const isActive = activeTab === tab.id
               return (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                    activeTab === tab.id ? "bg-[#14B8A6]/10 text-[#14B8A6]" : "text-[#64748B] hover:text-[#94A3B8]"
+                  className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    isActive ? "bg-card text-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}>
                   <Icon size={13} />
                   {tab.label}
@@ -403,36 +381,33 @@ export default function LiveDbPage() {
             })}
           </div>
 
-          {/* Tab content */}
           {activeTab === "overview" && (
             <div className="space-y-5">
-              <div className="rounded-lg border p-4" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
+              <div className="mint-card p-4">
                 <form onSubmit={runQuery} className="space-y-3">
                   <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
-                    placeholder="Ask a question about your database in plain English…"
-                    rows={3} className="surface-input w-full px-3 py-2.5 text-sm resize-none"
-                    style={{ borderColor: "rgba(148,163,184,0.15)" }} />
+                    placeholder="Ask a question about your database in plain English\u2026"
+                    rows={3}
+                    className="w-full rounded-md border border-input bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/25 resize-none transition-colors duration-150" />
                   <div className="flex items-center gap-3">
                     <select value={provider} onChange={(e) => setProvider(e.target.value)}
-                      className="surface-input px-3 py-1.5 text-xs" style={{ borderColor: "rgba(148,163,184,0.15)" }}>
+                      className="h-9 rounded-md border border-input bg-card px-3 text-xs text-foreground focus:outline-none focus:border-accent">
                       <option value="groq">Groq (llama-3.3-70b)</option>
                       <option value="gemini">Gemini 1.5 Flash</option>
                       <option value="ollama">Ollama (local)</option>
                     </select>
-                    <button type="submit" disabled={loading || !question.trim()}
-                      className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded text-xs font-semibold text-white disabled:opacity-50 transition-all"
-                      style={{ background: "#14B8A6" }}>
-                      <Zap size={13} /> {loading ? "Running…" : "Run Live Query"}
-                    </button>
+                    <Button type="submit" disabled={loading || !question.trim()} variant="primary" size="sm">
+                      {loading ? <><Loader2 size={13} className="animate-spin" /> Running&hellip;</> : <><Zap size={13} /> Run Live Query</>}
+                    </Button>
                   </div>
                 </form>
               </div>
               {result && (
                 <>
                   {result.status === "blocked" && (
-                    <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(245,158,11,0.2)", background: "rgba(245,158,11,0.04)" }}>
-                      <AlertTriangle size={16} style={{ color: "#F59E0B" }} className="shrink-0 mt-0.5" />
-                      <div className="text-sm" style={{ color: "#F59E0B" }}><p className="font-semibold">Query not generated</p><p className="text-xs mt-1 opacity-80">{result.error}</p></div>
+                    <div className="rounded-lg border border-warning/20 bg-warning/10 p-4 flex gap-3">
+                      <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                      <div className="text-sm text-amber-400"><p className="font-medium">Query not generated</p><p className="text-xs mt-1 opacity-80">{result.error}</p></div>
                     </div>
                   )}
                   {result.generated_sql && <SQLPreview sql={result.generated_sql} status={result.status} />}
@@ -440,8 +415,8 @@ export default function LiveDbPage() {
                     <><ChartView columns={result.columns} rows={result.rows} /><ResultsTable columns={result.columns} rows={result.rows} rowCount={result.row_count} executionTimeMs={result.execution_time_ms} /></>
                   )}
                   {result.status === "failed" && result.error && (
-                    <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)" }}>
-                      <AlertTriangle size={16} style={{ color: "#EF4444" }} className="shrink-0" /><p className="text-sm" style={{ color: "#EF4444" }}>{result.error}</p>
+                    <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 flex gap-3">
+                      <AlertTriangle size={16} className="text-destructive shrink-0" /><p className="text-sm text-destructive">{result.error}</p>
                     </div>
                   )}
                 </>
@@ -453,12 +428,12 @@ export default function LiveDbPage() {
           {activeTab === "health" && (
             <>
               {schemaError && (
-                <div className="rounded-lg border p-4 flex gap-3" style={{ borderColor: "rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.04)" }}>
-                  <XCircle size={16} style={{ color: "#EF4444" }} className="shrink-0" /><p className="text-sm" style={{ color: "#EF4444" }}>{schemaError}</p>
+                <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 flex gap-3">
+                  <XCircle size={16} className="text-destructive shrink-0" /><p className="text-sm text-destructive">{schemaError}</p>
                 </div>
               )}
               {viz ? <SchemaHealthTabView score={viz.health_score} issues={viz.health_issues} />
-                : <div className="flex items-center justify-center py-16 text-sm text-[#64748B]">No health data. Connect to a database first.</div>}
+                : <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">No health data. Connect to a database first.</div>}
             </>
           )}
           {activeTab === "insights" && <AiInsightsTabView analysis={analysis} loading={aiLoading} />}

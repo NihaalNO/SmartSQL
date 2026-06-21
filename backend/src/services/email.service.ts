@@ -22,6 +22,31 @@ function escapeHtml(text: string): string {
     .replace(/'/g, "&#039;");
 }
 
+function getBrandLogoUrl(): string {
+  const origin = env.NEXT_PUBLIC_APP_URL || env.FRONTEND_URL;
+  return `${origin.replace(/\/$/, '')}/brand/smartsql-horizontal.svg`;
+}
+
+function getEmailShell(content: string): string {
+  const logoUrl = getBrandLogoUrl();
+  return `
+    <div style="background:#ffffff; color:#171717; font-family: Inter, Arial, sans-serif; margin:0; padding:32px 16px;">
+      <div style="max-width:600px; margin:0 auto; border:1px solid #e5e5e5; border-radius:12px; overflow:hidden;">
+        <div style="padding:24px 28px 18px; border-bottom:1px solid #ededed;">
+          <img src="${logoUrl}" width="141" height="36" alt="SmartSQL" style="display:block; border:0; outline:none; text-decoration:none;" />
+        </div>
+        <div style="padding:28px;">
+          ${content}
+        </div>
+        <div style="height:3px; background:#00d4a4;"></div>
+        <div style="padding:18px 28px; background:#fafafa; border-top:1px solid #ededed;">
+          <p style="margin:0; color:#888888; font-size:12px; line-height:18px;">This is an automated SmartSQL message. Please do not reply.</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 /**
  * Sends an email using SendGrid.
  */
@@ -51,21 +76,17 @@ export function getEmailVerificationTemplate(
   username: string
 ): string {
   const safeUsername = escapeHtml(username);
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Welcome to SmartSQL, ${safeUsername}!</h2>
-      <p>Thank you for signing up. Please verify your email address by clicking the button below:</p>
-      <a href="${verificationUrl}" style="display: inline-block; background-color: #004ac6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">
+  return getEmailShell(`
+      <p style="margin:0 0 10px; color:#5a5a5c; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;">Email verification</p>
+      <h2 style="margin:0 0 12px; color:#171717; font-size:24px; line-height:32px; font-weight:650;">Welcome to SmartSQL, ${safeUsername}.</h2>
+      <p style="margin:0 0 20px; color:#3a3a3c; font-size:15px; line-height:24px;">Thank you for signing up. Verify your email address to start generating safe, schema-aware SQL from natural language.</p>
+      <a href="${verificationUrl}" style="display:inline-block; background-color:#171717; color:#ffffff; padding:12px 18px; text-decoration:none; border-radius:8px; margin:4px 0 22px; font-size:14px; font-weight:650;">
         Verify Email
       </a>
-      <p>Or copy and paste the following link into your browser:</p>
-      <p>${verificationUrl}</p>
-      <p>This link will expire in 1 hour.</p>
-      <p>If you didn't create an account, please ignore this email.</p>
-      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-      <p style="font-size: 12px; color: #777;">This is an automated message, please do not reply.</p>
-    </div>
-  `;
+      <p style="margin:0 0 8px; color:#5a5a5c; font-size:13px; line-height:20px;">Or copy and paste this link into your browser:</p>
+      <p style="margin:0 0 18px; word-break:break-all; color:#171717; font-size:13px; line-height:20px;">${verificationUrl}</p>
+      <p style="margin:0; color:#5a5a5c; font-size:13px; line-height:20px;">This link expires in 1 hour. If you did not create an account, you can ignore this email.</p>
+  `);
 }
 
 /**
@@ -76,21 +97,15 @@ export function getPasswordResetTemplate(
   username: string
 ): string {
   const safeUsername = escapeHtml(username);
-  return `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2>Password Reset Request</h2>
-      <p>Hello ${safeUsername},</p>
-      <p>We received a request to reset your password for your SmartSQL account.</p>
-      <p>Click the button below to choose a new password:</p>
-      <a href="${resetUrl}" style="display: inline-block; background-color: #004ac6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; margin: 20px 0;">
+  return getEmailShell(`
+      <p style="margin:0 0 10px; color:#5a5a5c; font-size:12px; font-weight:700; letter-spacing:.5px; text-transform:uppercase;">Password reset</p>
+      <h2 style="margin:0 0 12px; color:#171717; font-size:24px; line-height:32px; font-weight:650;">Reset your SmartSQL password.</h2>
+      <p style="margin:0 0 20px; color:#3a3a3c; font-size:15px; line-height:24px;">Hello ${safeUsername}, we received a request to reset your password. Use the secure link below to choose a new one.</p>
+      <a href="${resetUrl}" style="display:inline-block; background-color:#171717; color:#ffffff; padding:12px 18px; text-decoration:none; border-radius:8px; margin:4px 0 22px; font-size:14px; font-weight:650;">
         Reset Password
       </a>
-      <p>Or copy and paste the following link into your browser:</p>
-      <p>${resetUrl}</p>
-      <p>This link will expire in 1 hour.</p>
-      <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
-      <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-      <p style="font-size: 12px; color: #777;">This is an automated message, please do not reply.</p>
-    </div>
-  `;
+      <p style="margin:0 0 8px; color:#5a5a5c; font-size:13px; line-height:20px;">Or copy and paste this link into your browser:</p>
+      <p style="margin:0 0 18px; word-break:break-all; color:#171717; font-size:13px; line-height:20px;">${resetUrl}</p>
+      <p style="margin:0; color:#5a5a5c; font-size:13px; line-height:20px;">This link expires in 1 hour. If you did not request this, your password will remain unchanged.</p>
+  `);
 }

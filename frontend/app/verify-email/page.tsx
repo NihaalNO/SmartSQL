@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { authApi } from "@/lib/api"
 import toast from "react-hot-toast"
+import { MailCheck, Loader2 } from "lucide-react"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 export const dynamic = 'force-dynamic'
 
@@ -29,7 +31,6 @@ export default function VerifyEmailPage() {
         setVerified(true)
         toast.success('Email verified successfully! You can now log in.')
 
-        // Auto-redirect to login after 3 seconds
         setTimeout(() => {
           router.push('/login')
         }, 3000)
@@ -47,12 +48,11 @@ export default function VerifyEmailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Verifying your email...</h2>
-          <p className="text-gray-600">
-            We're verifying your email address. This should only take a moment.
-          </p>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="text-center">
+          <SmartSQLLogo variant="icon" size={36} className="mx-auto mb-4 animate-pulse" />
+          <h2 className="heading-md text-foreground mb-2">Verifying your email&hellip;</h2>
+          <p className="body-sm text-muted-foreground">This should only take a moment.</p>
         </div>
       </div>
     )
@@ -60,15 +60,19 @@ export default function VerifyEmailPage() {
 
   if (verified) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Email Verified!</h2>
-          <p className="text-gray-600 mb-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="text-center max-w-sm">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+            <MailCheck size={32} className="text-primary" />
+          </div>
+          <h2 className="heading-md text-foreground mb-2">Email Verified!</h2>
+          <p className="body-sm text-muted-foreground mb-6">
             Your email has been successfully verified. You can now log in to your account.
           </p>
-          <div className="animate-pulse inline-flex items-center px-3 py-2 rounded-full text-sm font-medium text-bg-gray-100 bg-gray-800">
-            Redirecting to login page...
-          </div>
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm text-muted-foreground bg-white/[0.04]">
+            <SmartSQLLogo variant="icon" size={16} className="animate-pulse" />
+            Redirecting to login&hellip;
+          </span>
         </div>
       </div>
     )

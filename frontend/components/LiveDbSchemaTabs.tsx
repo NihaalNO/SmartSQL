@@ -88,8 +88,8 @@ function layoutGraph(tables: TableInfo[], fks: ForeignKeyInfo[]) {
     targetHandle: `${fk.target_table}-${fk.target_column}`,
     type: "smoothstep",
     animated: false,
-    markerEnd: { type: MarkerType.ArrowClosed, color: "#14B8A6" },
-    style: { stroke: "#14B8A6", strokeWidth: 1.5, opacity: 0.6 },
+    markerEnd: { type: MarkerType.ArrowClosed, color: "var(--mint-green-deep)" },
+    style: { stroke: "var(--mint-green-deep)", strokeWidth: 1.5, opacity: 0.65 },
     label: fks.length < 50 ? `${fk.source_column} → ${fk.target_column}` : undefined,
   })) : []
   return { nodes, edges }
@@ -106,41 +106,41 @@ const SchemaTableNode = React.memo(function SchemaTableNode({ data, selected }: 
 
   return (
     <div
-      className={`rounded-xl overflow-hidden border transition-shadow duration-200 ${
-        selected ? "border-[#14B8A6] shadow-[0_0_20px_rgba(20,184,166,0.25)]" : "border-white/[0.08] shadow-lg"
+      className={`overflow-hidden rounded-lg border transition-colors duration-200 ${
+        selected ? "border-accent" : "border-border"
       }`}
-      style={{ width: NODE_W, background: "rgba(15,23,42,0.95)", backdropFilter: "blur(8px)" }}
+      style={{ width: NODE_W, background: "var(--mint-canvas)" }}
     >
       <div
-        className="flex items-center gap-2 px-3 border-b border-white/[0.06]"
-        style={{ height: HEADER_H, background: isView ? "rgba(99,102,241,0.15)" : "rgba(20,184,166,0.08)" }}
+        className="flex items-center gap-2 px-3 border-b border-border"
+        style={{ height: HEADER_H, background: "var(--mint-surface)" }}
       >
-        {isView ? <Eye size={14} className="shrink-0 text-indigo-400" /> : <Table size={14} className="shrink-0 text-[#14B8A6]" />}
-        <span className="text-sm font-semibold text-[#F8FAFC] truncate">{table.name}</span>
+        {isView ? <Eye size={14} className="shrink-0 text-[var(--mint-tag)]" /> : <Table size={14} className="shrink-0 text-[var(--mint-green-deep)]" />}
+        <span className="text-sm font-semibold text-foreground truncate">{table.name}</span>
         {table.row_estimate != null && (
-          <span className="ml-auto text-[10px] text-[#64748B] font-mono">{table.row_estimate.toLocaleString()} rows</span>
+          <span className="ml-auto text-[10px] text-muted-foreground font-mono">{table.row_estimate.toLocaleString()} rows</span>
         )}
       </div>
       {isMinimal ? (
         <div className="flex items-center gap-1 px-3" style={{ height: COLLAPSED_COL_H }}>
-          <span className="text-xs text-[#64748B]">{cols.length} column{cols.length !== 1 ? "s" : ""}</span>
+          <span className="text-xs text-muted-foreground">{cols.length} column{cols.length !== 1 ? "s" : ""}</span>
           {cols.some(c => c.is_pk) && <Key size={9} className="text-amber-400" />}
           {cols.some(c => c.is_unique) && <Hash size={9} className="text-blue-400" />}
         </div>
       ) : (
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-border">
           {cols.length === 0 && (
-            <div className="px-3 py-2 text-xs text-[#64748B] italic">No columns</div>
+            <div className="px-3 py-2 text-xs text-muted-foreground italic">No columns</div>
           )}
           {cols.map((col) => (
-            <div key={col.name} className="flex items-center gap-2 px-3 text-xs hover:bg-white/[0.02] transition-colors" style={{ height: ROW_H }}>
+            <div key={col.name} className="flex items-center gap-2 px-3 text-xs hover:bg-secondary transition-colors" style={{ height: ROW_H }}>
               {col.is_pk && <Key size={10} className="shrink-0 text-amber-400" />}
               {col.is_unique && !col.is_pk && <Hash size={10} className="shrink-0 text-blue-400" />}
               <Handle type="source" position={Position.Right} id={`${table.name}-${col.name}`} style={{ width: 0, height: 0, background: "transparent", border: "none" }} />
               <Handle type="target" position={Position.Left} id={`${table.name}-${col.name}`} style={{ width: 0, height: 0, background: "transparent", border: "none" }} />
-              <span className={`font-mono ${col.is_pk ? "text-amber-300 font-medium" : "text-[#CBD5E1]"}`}>{col.name}</span>
-              <span className="ml-auto text-[#64748B] font-mono text-[10px] truncate max-w-[100px] text-right" title={col.type}>{col.type}</span>
-              {!col.nullable && <span className="text-[10px] text-red-400 shrink-0 font-mono">NN</span>}
+              <span className={`font-mono ${col.is_pk ? "text-[var(--mint-warn)] font-medium" : "text-foreground"}`}>{col.name}</span>
+              <span className="ml-auto text-muted-foreground font-mono text-[10px] truncate max-w-[100px] text-right" title={col.type}>{col.type}</span>
+              {!col.nullable && <span className="text-[10px] text-destructive shrink-0 font-mono">NN</span>}
             </div>
           ))}
         </div>
@@ -165,17 +165,17 @@ const SchemaCanvasInner = React.memo(function SchemaCanvasInner({ tables, foreig
   const onNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: { table: TableInfo } }) => onNodeSelect(node.data.table), [onNodeSelect])
   const onPaneClick = useCallback(() => onNodeSelect(null), [onNodeSelect])
   return (
-    <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onNodeClick={onNodeClick} onPaneClick={onPaneClick} nodeTypes={nodeTypes} onlyRenderVisibleElements fitView minZoom={0.1} maxZoom={2} colorMode="dark" style={{ background: "#0B0F1A" }}>
-      <Background color="#1E293B" gap={20} size={1} />
-      <Controls className="[&>button]:bg-[#1E293B] [&>button]:border-white/[0.08] [&>button]:text-[#94A3B8] [&>button:hover]:bg-[#334155]" />
-      <MiniMap nodeColor="#14B8A6" maskColor="rgba(0,0,0,0.6)" style={{ background: "#0F172A", border: "1px solid rgba(255,255,255,0.08)" }} />
+    <ReactFlow nodes={nodes} edges={edges} onNodesChange={onNodesChange} onEdgesChange={onEdgesChange} onNodeClick={onNodeClick} onPaneClick={onPaneClick} nodeTypes={nodeTypes} onlyRenderVisibleElements fitView minZoom={0.1} maxZoom={2} colorMode="light" style={{ background: "var(--mint-surface-soft)" }}>
+      <Background color="var(--mint-hairline)" gap={20} size={1} />
+      <Controls className="[&>button]:bg-card [&>button]:border-border [&>button]:text-muted-foreground [&>button:hover]:bg-secondary" />
+      <MiniMap nodeColor="var(--mint-green-deep)" maskColor="var(--mint-surface-soft)" style={{ background: "var(--mint-canvas)", border: "1px solid var(--mint-hairline)" }} />
     </ReactFlow>
   )
 })
 
 const SchemaCanvas = React.memo(function SchemaCanvas(props: { tables: TableInfo[]; foreignKeys: ForeignKeyInfo[]; onNodeSelect: (t: TableInfo | null) => void }) {
   return (
-    <div className="h-full w-full rounded-xl overflow-hidden border border-white/[0.08]" style={{ minHeight: 500 }}>
+    <div className="h-full w-full rounded-lg overflow-hidden border border-border" style={{ minHeight: 500 }}>
       <ReactFlowProvider><SchemaCanvasInner {...props} /></ReactFlowProvider>
     </div>
   )
@@ -187,30 +187,30 @@ function TableInspector({ table, onClose }: { table: TableInfo; onClose: () => v
   const pkCount = table.columns.filter((c) => c.is_pk).length
   const nullableCount = table.columns.filter((c) => c.nullable).length
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0F172A] overflow-hidden">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]">
-        <Table size={16} className="text-[#14B8A6]" /><span className="text-sm font-semibold text-[#F8FAFC]">{table.name}</span>
-        <button onClick={onClose} className="ml-auto text-[#64748B] hover:text-[#F8FAFC] text-xs">✕</button>
+    <div className="mint-card overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
+        <Table size={16} className="text-[var(--mint-green-deep)]" /><span className="text-sm font-semibold text-foreground">{table.name}</span>
+        <button onClick={onClose} className="ml-auto text-[var(--mint-steel)] hover:text-[var(--mint-ink)] text-xs">✕</button>
       </div>
       <div className="p-4 space-y-4">
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-lg bg-white/[0.04] p-2.5 text-center"><p className="text-xs text-[#64748B]">Columns</p><p className="text-lg font-bold font-mono text-[#F8FAFC]">{table.columns.length}</p></div>
-          <div className="rounded-lg bg-white/[0.04] p-2.5 text-center"><p className="text-xs text-[#64748B]">PK</p><p className="text-lg font-bold font-mono text-amber-400">{pkCount}</p></div>
-          <div className="rounded-lg bg-white/[0.04] p-2.5 text-center"><p className="text-xs text-[#64748B]">Nullable</p><p className="text-lg font-bold font-mono text-[#F8FAFC]">{nullableCount}</p></div>
+          <div className="rounded-lg bg-secondary p-2.5 text-center"><p className="text-xs text-[var(--mint-steel)]">Columns</p><p className="text-lg font-bold font-mono text-[var(--mint-ink)]">{table.columns.length}</p></div>
+          <div className="rounded-lg bg-secondary p-2.5 text-center"><p className="text-xs text-[var(--mint-steel)]">PK</p><p className="text-lg font-bold font-mono text-amber-400">{pkCount}</p></div>
+          <div className="rounded-lg bg-secondary p-2.5 text-center"><p className="text-xs text-[var(--mint-steel)]">Nullable</p><p className="text-lg font-bold font-mono text-[var(--mint-ink)]">{nullableCount}</p></div>
         </div>
         {table.row_estimate != null && (
-          <div className="flex items-center gap-2 text-xs text-[#94A3B8]">
-            Estimated rows: <span className="font-mono text-[#F8FAFC]">{table.row_estimate.toLocaleString()}</span>
+          <div className="flex items-center gap-2 text-xs text-[var(--mint-steel)]">
+            Estimated rows: <span className="font-mono text-[var(--mint-ink)]">{table.row_estimate.toLocaleString()}</span>
           </div>
         )}
         <div>
-          <p className="text-xs font-medium text-[#64748B] mb-2">Columns</p>
+          <p className="text-xs font-medium text-[var(--mint-steel)] mb-2">Columns</p>
           <div className="space-y-1 max-h-[240px] overflow-y-auto custom-scrollbar">
             {table.columns.map((col) => (
-              <div key={col.name} className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-white/[0.04]">
+              <div key={col.name} className="flex items-center gap-2 text-xs px-2 py-1.5 rounded-md hover:bg-secondary">
                 {col.is_pk && <Key size={10} className="text-amber-400 shrink-0" />}
-                <span className="text-[#CBD5E1] font-mono">{col.name}</span>
-                <span className="ml-auto text-[#64748B] font-mono text-[10px]">{col.type}</span>
+                <span className="text-[var(--mint-charcoal)] font-mono">{col.name}</span>
+                <span className="ml-auto text-[var(--mint-steel)] font-mono text-[10px]">{col.type}</span>
                 {col.is_unique && <span className="text-[10px] text-blue-400">UNIQUE</span>}
                 {!col.nullable && <span className="text-[10px] text-red-400">NN</span>}
               </div>
@@ -225,23 +225,23 @@ function TableInspector({ table, onClose }: { table: TableInfo; onClose: () => v
 // ── Health Tab ────────────────────────────────────────────────────────────────
 
 function HealthTab({ score, issues }: { score: number; issues: string[] }) {
-  const color = score >= 80 ? "#22C55E" : score >= 50 ? "#F59E0B" : "#EF4444"
+  const color = score >= 80 ? "var(--mint-green-deep)" : score >= 50 ? "var(--mint-warn)" : "var(--mint-error)"
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-white/[0.08] bg-[#0F172A] p-5">
+      <div className="rounded-xl border border-border bg-[var(--mint-canvas)] p-5">
         <div className="flex items-center gap-3 mb-4">
           <Shield size={20} className="shrink-0" style={{ color }} />
-          <span className="text-base font-semibold text-[#F8FAFC]">Schema Health Score</span>
+          <span className="text-base font-semibold text-[var(--mint-ink)]">Schema Health Score</span>
           <span className="ml-auto text-2xl font-bold font-mono" style={{ color }}>{score}/100</span>
         </div>
-        <div className="h-2 rounded-full bg-white/[0.06] mb-4 overflow-hidden">
+        <div className="h-2 rounded-full bg-secondary mb-4 overflow-hidden">
           <div className="h-full rounded-full transition-all duration-700" style={{ width: `${score}%`, background: color }} />
         </div>
         {issues.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs font-medium text-[#64748B]">Recommendations</p>
+            <p className="text-xs font-medium text-[var(--mint-steel)]">Recommendations</p>
             {issues.map((issue, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm text-[#94A3B8] p-2 rounded-lg bg-white/[0.02]">
+              <div key={i} className="flex items-start gap-2 text-sm text-[var(--mint-steel)] p-2 rounded-lg bg-secondary">
                 <AlertTriangle size={14} className="shrink-0 mt-0.5 text-amber-400" />
                 <span>{issue}</span>
               </div>
@@ -249,7 +249,7 @@ function HealthTab({ score, issues }: { score: number; issues: string[] }) {
           </div>
         )}
         {issues.length === 0 && (
-          <p className="text-sm text-[#22C55E] flex items-center gap-1.5"><CheckCircle size={14} /> No issues found — schema is well-structured</p>
+          <p className="text-sm text-[var(--mint-green-deep)] flex items-center gap-1.5"><CheckCircle size={14} /> No issues found — schema is well-structured</p>
         )}
       </div>
     </div>
@@ -263,8 +263,8 @@ function AiInsightsTab({ analysis, loading }: { analysis: SchemaAnalysis | null;
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center space-y-3">
-          <Loader2 size={24} className="animate-spin text-[#14B8A6] mx-auto" />
-          <p className="text-sm text-[#64748B]">Running AI schema analysis…</p>
+          <Loader2 size={24} className="animate-spin text-[var(--mint-green-deep)] mx-auto" />
+          <p className="text-sm text-[var(--mint-steel)]">Running AI schema analysis…</p>
         </div>
       </div>
     )
@@ -273,38 +273,38 @@ function AiInsightsTab({ analysis, loading }: { analysis: SchemaAnalysis | null;
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center space-y-2">
-          <Cpu size={32} className="text-[#64748B] mx-auto opacity-40" />
-          <p className="text-sm text-[#64748B]">No analysis available</p>
-          <p className="text-xs text-[#475569]">Schema intelligence requires a connected database</p>
+          <Cpu size={32} className="text-[var(--mint-steel)] mx-auto opacity-40" />
+          <p className="text-sm text-[var(--mint-steel)]">No analysis available</p>
+          <p className="text-xs text-[var(--mint-stone)]">Schema intelligence requires a connected database</p>
         </div>
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0F172A] p-5 space-y-5">
-      <div className="flex items-center gap-2"><Sparkles size={18} className="text-[#14B8A6]" /><span className="text-base font-semibold text-[#F8FAFC]">Schema Intelligence</span></div>
+    <div className="rounded-xl border border-border bg-[var(--mint-canvas)] p-5 space-y-5">
+      <div className="flex items-center gap-2"><Sparkles size={18} className="text-[var(--mint-green-deep)]" /><span className="text-base font-semibold text-[var(--mint-ink)]">Schema Intelligence</span></div>
       {analysis.purpose && (
-        <div><p className="text-xs font-medium text-[#64748B] mb-1.5">Database Purpose</p><p className="text-sm text-[#CBD5E1]">{analysis.purpose}</p></div>
+        <div><p className="text-xs font-medium text-[var(--mint-steel)] mb-1.5">Database Purpose</p><p className="text-sm text-[var(--mint-charcoal)]">{analysis.purpose}</p></div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {analysis.core_entities.length > 0 && (
-          <div><p className="text-xs font-medium text-[#64748B] mb-2">Core Entities</p><div className="flex flex-wrap gap-1.5">{analysis.core_entities.map((e) => (<span key={e} className="px-2.5 py-1 rounded-md text-xs bg-[#14B8A6]/10 text-[#14B8A6] font-medium">{e}</span>))}</div></div>
+          <div><p className="text-xs font-medium text-[var(--mint-steel)] mb-2">Core Entities</p><div className="flex flex-wrap gap-1.5">{analysis.core_entities.map((e) => (<span key={e} className="px-2.5 py-1 rounded-md text-xs bg-secondary text-[var(--mint-green-deep)] font-medium">{e}</span>))}</div></div>
         )}
         {analysis.lookup_tables.length > 0 && (
-          <div><p className="text-xs font-medium text-[#64748B] mb-2">Lookup Tables</p><div className="flex flex-wrap gap-1.5">{analysis.lookup_tables.map((e) => (<span key={e} className="px-2.5 py-1 rounded-md text-xs bg-indigo-500/10 text-indigo-400 font-medium">{e}</span>))}</div></div>
+          <div><p className="text-xs font-medium text-[var(--mint-steel)] mb-2">Lookup Tables</p><div className="flex flex-wrap gap-1.5">{analysis.lookup_tables.map((e) => (<span key={e} className="px-2.5 py-1 rounded-md text-xs bg-indigo-500/10 text-indigo-400 font-medium">{e}</span>))}</div></div>
         )}
       </div>
       {analysis.primary_workflow && (
-        <div><p className="text-xs font-medium text-[#64748B] mb-1.5">Primary Workflow</p><p className="text-sm text-[#94A3B8] leading-relaxed">{analysis.primary_workflow}</p></div>
+        <div><p className="text-xs font-medium text-[var(--mint-steel)] mb-1.5">Primary Workflow</p><p className="text-sm text-[var(--mint-steel)] leading-relaxed">{analysis.primary_workflow}</p></div>
       )}
       {analysis.relationship_clusters.length > 0 && (
-        <div><p className="text-xs font-medium text-[#64748B] mb-2">Relationship Clusters</p><div className="space-y-1.5">{analysis.relationship_clusters.map((c, i) => (<div key={i} className="flex items-start gap-2 text-sm text-[#94A3B8]"><span className="text-[#14B8A6] mt-1.5">●</span><span>{c}</span></div>))}</div></div>
+        <div><p className="text-xs font-medium text-[var(--mint-steel)] mb-2">Relationship Clusters</p><div className="space-y-1.5">{analysis.relationship_clusters.map((c, i) => (<div key={i} className="flex items-start gap-2 text-sm text-[var(--mint-steel)]"><span className="text-[var(--mint-green-deep)] mt-1.5">●</span><span>{c}</span></div>))}</div></div>
       )}
       {analysis.architecture_notes && (
-        <div><p className="text-xs font-medium text-[#64748B] mb-1.5">Architecture Notes</p><p className="text-sm text-[#94A3B8]">{analysis.architecture_notes}</p></div>
+        <div><p className="text-xs font-medium text-[var(--mint-steel)] mb-1.5">Architecture Notes</p><p className="text-sm text-[var(--mint-steel)]">{analysis.architecture_notes}</p></div>
       )}
-      <div className="flex items-center gap-2 text-xs text-[#64748B] pt-2 border-t border-white/[0.06]">
-        <Cpu size={12} /> Complexity: <span className="font-mono text-[#F8FAFC] capitalize">{analysis.complexity || "unknown"}</span>
+      <div className="flex items-center gap-2 text-xs text-[var(--mint-steel)] pt-2 border-t border-border">
+        <Cpu size={12} /> Complexity: <span className="font-mono text-[var(--mint-ink)] capitalize">{analysis.complexity || "unknown"}</span>
       </div>
     </div>
   )
@@ -319,8 +319,8 @@ function DocumentationTab({ doc, loading, onDownload }: {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center space-y-3">
-          <Loader2 size={24} className="animate-spin text-[#14B8A6] mx-auto" />
-          <p className="text-sm text-[#64748B]">Generating documentation…</p>
+          <Loader2 size={24} className="animate-spin text-[var(--mint-green-deep)] mx-auto" />
+          <p className="text-sm text-[var(--mint-steel)]">Generating documentation…</p>
         </div>
       </div>
     )
@@ -329,25 +329,25 @@ function DocumentationTab({ doc, loading, onDownload }: {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="text-center space-y-2">
-          <FileText size={32} className="text-[#64748B] mx-auto opacity-40" />
-          <p className="text-sm text-[#64748B]">No documentation generated</p>
-          <p className="text-xs text-[#475569]">Documentation is auto-generated after schema discovery</p>
+          <FileText size={32} className="text-[var(--mint-steel)] mx-auto opacity-40" />
+          <p className="text-sm text-[var(--mint-steel)]">No documentation generated</p>
+          <p className="text-xs text-[var(--mint-stone)]">Documentation is auto-generated after schema discovery</p>
         </div>
       </div>
     )
   }
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-[#0F172A] overflow-hidden">
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-white/[0.06]">
-        <FileText size={16} className="text-[#14B8A6]" />
-        <span className="text-sm font-semibold text-[#F8FAFC]">Database Documentation</span>
-        <span className="text-xs text-[#64748B] ml-1">({doc.table_count} tables, {doc.relationship_count} relationships)</span>
-        <button onClick={onDownload} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs bg-[#14B8A6]/10 text-[#14B8A6] hover:bg-[#14B8A6]/20 transition-colors font-medium">
+    <div className="rounded-xl border border-border bg-[var(--mint-canvas)] overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3 border-b border-border">
+        <FileText size={16} className="text-[var(--mint-green-deep)]" />
+        <span className="text-sm font-semibold text-[var(--mint-ink)]">Database Documentation</span>
+        <span className="text-xs text-[var(--mint-steel)] ml-1">({doc.table_count} tables, {doc.relationship_count} relationships)</span>
+        <button onClick={onDownload} className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs bg-secondary text-[var(--mint-green-deep)] hover:bg-[var(--mint-green-deep)]/20 transition-colors font-medium">
           <Download size={12} /> Download Markdown
         </button>
       </div>
       <div className="p-5">
-        <pre className="text-sm text-[#94A3B8] max-h-96 overflow-y-auto custom-scrollbar whitespace-pre-wrap font-mono leading-relaxed">{doc.markdown}</pre>
+        <pre className="text-sm text-[var(--mint-steel)] max-h-96 overflow-y-auto custom-scrollbar whitespace-pre-wrap font-mono leading-relaxed">{doc.markdown}</pre>
       </div>
     </div>
   )
@@ -388,8 +388,8 @@ export function SchemaTab({ viz, loading }: {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-3">
-          <Loader2 size={28} className="animate-spin text-[#14B8A6] mx-auto" />
-          <p ref={progressRef} className="text-sm text-[#64748B]">Discovering schema metadata…</p>
+          <Loader2 size={28} className="animate-spin text-[var(--mint-green-deep)] mx-auto" />
+          <p ref={progressRef} className="text-sm text-[var(--mint-steel)]">Discovering schema metadata…</p>
         </div>
       </div>
     )
@@ -399,9 +399,9 @@ export function SchemaTab({ viz, loading }: {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-3">
-          <Layers size={40} className="text-[#64748B] mx-auto opacity-30" />
-          <p className="text-sm text-[#64748B]">No schema data available</p>
-          <p className="text-xs text-[#475569]">Connect to a database first to visualize its schema</p>
+          <Layers size={40} className="text-[var(--mint-steel)] mx-auto opacity-30" />
+          <p className="text-sm text-[var(--mint-steel)]">No schema data available</p>
+          <p className="text-xs text-[var(--mint-stone)]">Connect to a database first to visualize its schema</p>
         </div>
       </div>
     )
@@ -414,9 +414,9 @@ export function SchemaTab({ viz, loading }: {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-3">
-          <Table size={40} className="text-[#64748B] mx-auto opacity-30" />
-          <p className="text-sm text-[#64748B]">No tables found in database</p>
-          <p className="text-xs text-[#475569]">The connected database has no tables in the public schema</p>
+          <Table size={40} className="text-[var(--mint-steel)] mx-auto opacity-30" />
+          <p className="text-sm text-[var(--mint-steel)]">No tables found in database</p>
+          <p className="text-xs text-[var(--mint-stone)]">The connected database has no tables in the public schema</p>
         </div>
       </div>
     )
@@ -426,14 +426,14 @@ export function SchemaTab({ viz, loading }: {
     <div className="space-y-3">
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#64748B]" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--mint-steel)]" />
           <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Filter tables or columns…"
-            className="w-full rounded-lg border border-white/[0.08] bg-[#0F172A] pl-9 pr-3 py-2 text-sm text-[#F8FAFC] placeholder:text-[#475569] outline-none focus:border-[#14B8A6] transition-colors" />
+            className="w-full rounded-lg border border-border bg-[var(--mint-canvas)] pl-9 pr-3 py-2 text-sm text-[var(--mint-ink)] placeholder:text-[var(--mint-stone)] outline-none focus:border-[var(--mint-green-deep)] transition-colors" />
         </div>
-        <div className="flex items-center gap-4 text-xs text-[#64748B]">
-          <span><span className="text-[#F8FAFC] font-mono">{filteredViz.tables.length}</span> tables</span>
-          <span><span className="text-[#F8FAFC] font-mono">{filteredViz.foreign_keys.length}</span> relationships</span>
-          <span><span className="text-[#F8FAFC] font-mono">{filteredViz.indexes.length}</span> indexes</span>
+        <div className="flex items-center gap-4 text-xs text-[var(--mint-steel)]">
+          <span><span className="text-[var(--mint-ink)] font-mono">{filteredViz.tables.length}</span> tables</span>
+          <span><span className="text-[var(--mint-ink)] font-mono">{filteredViz.foreign_keys.length}</span> relationships</span>
+          <span><span className="text-[var(--mint-ink)] font-mono">{filteredViz.indexes.length}</span> indexes</span>
         </div>
       </div>
 
@@ -450,14 +450,14 @@ export function SchemaTab({ viz, loading }: {
         {selectedTable && <div className="w-72 shrink-0"><TableInspector table={selectedTable} onClose={() => setSelectedTable(null)} /></div>}
       </div>
 
-      <div className="rounded-xl border border-white/[0.08] bg-[#0F172A] p-3">
+      <div className="rounded-xl border border-border bg-[var(--mint-canvas)] p-3">
         <div className="flex items-center gap-4 text-xs flex-wrap">
-          <span className="text-[#64748B] font-medium">Legend:</span>
-          <span className="flex items-center gap-1.5 text-[#94A3B8]"><Key size={11} className="text-amber-400" /> PK</span>
-          <span className="flex items-center gap-1.5 text-[#94A3B8]"><Hash size={11} className="text-blue-400" /> Unique</span>
-          <span className="flex items-center gap-1.5 text-[#94A3B8]"><span className="text-[10px] text-red-400 font-mono">NN</span> Not Null</span>
-          <span className="flex items-center gap-1.5 text-[#94A3B8]"><Eye size={11} className="text-indigo-400" /> View</span>
-          <span className="flex items-center gap-1.5 text-[#94A3B8]"><div className="w-4 h-0.5 rounded bg-[#14B8A6] opacity-60" /> FK</span>
+          <span className="text-[var(--mint-steel)] font-medium">Legend:</span>
+          <span className="flex items-center gap-1.5 text-[var(--mint-steel)]"><Key size={11} className="text-amber-400" /> PK</span>
+          <span className="flex items-center gap-1.5 text-[var(--mint-steel)]"><Hash size={11} className="text-blue-400" /> Unique</span>
+          <span className="flex items-center gap-1.5 text-[var(--mint-steel)]"><span className="text-[10px] text-red-400 font-mono">NN</span> Not Null</span>
+          <span className="flex items-center gap-1.5 text-[var(--mint-steel)]"><Eye size={11} className="text-indigo-400" /> View</span>
+          <span className="flex items-center gap-1.5 text-[var(--mint-steel)]"><div className="w-4 h-0.5 rounded bg-[var(--mint-green-deep)] opacity-60" /> FK</span>
         </div>
       </div>
     </div>
@@ -495,8 +495,9 @@ export function SchemaStyles() {
     <style jsx global>{`
       .custom-scrollbar::-webkit-scrollbar { width: 4px; }
       .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-      .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: var(--mint-hairline); border-radius: 4px; }
       .react-flow__minimap { border-radius: 12px !important; }
     `}</style>
   )
 }
+

@@ -2,43 +2,24 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import toast from "react-hot-toast"
-import { Mail, Lock, BarChart2, Eye } from "lucide-react"
+import { Mail, Lock, BarChart2, Eye, Shield } from "lucide-react"
 import { authApi } from "@/lib/api"
 import { saveAuth, getAndClearRedirectUrl } from "@/lib/auth/session"
 import Link from "next/link"
 import { getAuthDisplayError } from "@/lib/auth/errors"
 import { startSmartSqlGoogleAuth } from "@/lib/auth/google"
 import { supabase } from "@/lib/supabase"
+import { Button } from "@/components/ui/button"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 export const dynamic = 'force-dynamic'
 
 type RoleId = "analyst" | "viewer"
 
-const ROLES: {
-  id: RoleId
-  label: string
-  icon: React.ElementType
-  tagline: string
-  description: string
-  color: string
-}[] = [
-  {
-    id: "analyst",
-    label: "Analyst",
-    icon: BarChart2,
-    tagline: "Data Explorer",
-    description: "Run queries, save insights, connect live databases & visualise results",
-    color: "#14B8A6",
-  },
-  {
-    id: "viewer",
-    label: "Viewer",
-    icon: Eye,
-    tagline: "Read-Only Access",
-    description: "Browse query history and explore shared data insights securely",
-    color: "#60A5FA",
-  },
-]
+const ROLES = [
+  { id: "analyst", label: "Analyst", icon: BarChart2, tagline: "Data Explorer", description: "Run queries, save insights, connect databases & visualise results", color: "#533AFD" },
+  { id: "viewer",  label: "Viewer",  icon: Eye,       tagline: "Read-Only",     description: "Browse query history and explore shared data insights securely", color: "#22C55E" },
+] as const
 
 export default function LoginPage() {
   const router = useRouter()
@@ -63,6 +44,7 @@ export default function LoginPage() {
   }
 
   const active = ROLES.find(r => r.id === selectedRole)!
+  const ActiveIcon = active.icon
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -79,155 +61,118 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#050816" }}>
-      <header className="sticky top-0 z-50 border-b border-white/[0.06]" style={{ background: "rgba(5,8,22,0.92)" }}>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-14">
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md flex items-center justify-center bg-[#14B8A6]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-              </svg>
-            </div>
-            <span className="text-sm font-bold text-[#F8FAFC]">SmartSQL</span>
+            <SmartSQLLogo size={32} className="text-sm" />
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-xs text-[#64748B]">New to SmartSQL?</span>
-            <Link href="/register" className="text-sm font-medium px-4 py-1.5 rounded-lg text-white transition-all" style={{ background: "#14B8A6" }}>
-              Get Started
+            <span className="text-xs text-muted-foreground">New to SmartSQL?</span>
+            <Link href="/register">
+              <Button variant="primary" size="sm">Get Started</Button>
             </Link>
           </div>
         </div>
       </header>
 
-      <main className="flex-grow flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-sm">
           <div className="mb-8 text-center">
-            <h1 className="text-xl font-bold text-[#F8FAFC] mb-1.5">Sign in</h1>
-            <p className="text-sm" style={{ color: "#64748B" }}>Select your role, then sign in to continue</p>
+            <h1 className="heading-md text-foreground mb-1">Sign in</h1>
+            <p className="body-sm text-muted-foreground">Select your role, then sign in to continue</p>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5 mb-5">
+          <div className="grid grid-cols-2 gap-3 mb-5">
             {ROLES.map(role => {
               const Icon = role.icon
               const isActive = selectedRole === role.id
               return (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => setSelectedRole(role.id)}
-                  className="flex flex-col items-center gap-2 p-3.5 rounded-lg border transition-all duration-200 text-center"
+                <button key={role.id} type="button" onClick={() => setSelectedRole(role.id)}
+                  className="flex flex-col items-center gap-3 p-4 rounded border transition-all duration-200 text-center"
                   style={{
-                    backgroundColor: isActive ? `${role.color}10` : "rgba(255,255,255,0.02)",
-                    borderColor: isActive ? role.color : "rgba(148,163,184,0.1)",
+                    background: isActive ? `${role.color}08` : "transparent",
+                    borderColor: isActive ? `${role.color}40` : "rgba(255,255,255,0.06)",
                   }}
                 >
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center"
-                    style={{ background: isActive ? role.color : "rgba(255,255,255,0.06)" }}>
-                    <Icon size={16} color={isActive ? "#fff" : "#64748B"} />
+                  <div className="w-10 h-10 rounded flex items-center justify-center"
+                    style={{ background: isActive ? role.color : "rgba(255,255,255,0.04)" }}>
+                    <Icon size={18} color={isActive ? "#fff" : "rgba(255,255,255,0.3)"} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold leading-tight" style={{ color: isActive ? role.color : "#CBD5E1" }}>
-                      {role.label}
-                    </p>
-                    <p className="text-[11px] leading-tight mt-0.5" style={{ color: isActive ? role.color : "#64748B", opacity: isActive ? 0.8 : 1 }}>
-                      {role.tagline}
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{role.label}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{role.tagline}</p>
                   </div>
                 </button>
               )
             })}
           </div>
 
-          <div className="px-4 py-2.5 rounded-lg text-xs flex items-start gap-2 mb-5"
-            style={{ backgroundColor: `${active.color}10`, border: `1px solid ${active.color}20`, color: active.color }}>
-            <active.icon size={14} className="mt-0.5 shrink-0" />
+          <div className="flex items-start gap-2.5 p-3 rounded border text-xs mb-5"
+            style={{
+              background: `${active.color}06`,
+              borderColor: `${active.color}15`,
+              color: active.color,
+            }}>
+            <ActiveIcon size={14} className="mt-0.5 shrink-0" />
             <span>{active.description}</span>
           </div>
 
-          <div className="rounded-lg overflow-hidden border" style={{ borderColor: "rgba(148,163,184,0.1)" }}>
-            <div className="h-1" style={{ background: active.color }} />
-            <div className="p-6" style={{ background: "rgba(255,255,255,0.02)" }}>
+          <div className="rounded border border-white/[0.06] overflow-hidden">
+            <div className="h-0.5 bg-primary" />
+            <div className="p-6">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-[#F8FAFC]" htmlFor="email">Email</label>
+                  <label className="text-xs font-medium text-foreground/80" htmlFor="email">Email</label>
                   <div className="relative">
-                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#64748B" }} />
-                    <input
-                      id="email" type="email" required
-                      placeholder="name@company.com"
+                    <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                    <input id="email" type="email" required placeholder="name@company.com"
                       value={email} onChange={e => setEmail(e.target.value)}
-                      className="surface-input w-full pl-9 pr-3 py-2.5 text-sm"
-                      style={{ borderColor: "rgba(148,163,184,0.15)" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = active.color; e.currentTarget.style.boxShadow = `0 0 0 2px ${active.color}20` }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.15)"; e.currentTarget.style.boxShadow = "" }}
+                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <label className="text-xs font-medium text-[#F8FAFC]" htmlFor="password">Password</label>
-                    <Link href="/forgot-password" className="text-[11px]" style={{ color: active.color }}>
-                      Forgot?
-                    </Link>
+                    <label className="text-xs font-medium text-foreground/80" htmlFor="password">Password</label>
+                    <Link href="/forgot-password" className="text-xs text-primary">Forgot?</Link>
                   </div>
                   <div className="relative">
-                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "#64748B" }} />
-                    <input
-                      id="password" type="password" required
-                      placeholder="••••••••"
+                    <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
+                    <input id="password" type="password" required placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
                       value={password} onChange={e => setPassword(e.target.value)}
-                      className="surface-input w-full pl-9 pr-3 py-2.5 text-sm"
-                      style={{ borderColor: "rgba(148,163,184,0.15)" }}
-                      onFocus={e => { e.currentTarget.style.borderColor = active.color; e.currentTarget.style.boxShadow = `0 0 0 2px ${active.color}20` }}
-                      onBlur={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.15)"; e.currentTarget.style.boxShadow = "" }}
+                      className="w-full pl-9 pr-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
                     />
                   </div>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50"
-                  style={{ background: active.color }}
-                >
-                  {loading ? "Signing in…" : `Sign in as ${active.label}`}
-                </button>
+                <Button type="submit" disabled={loading} variant="primary" className="w-full h-11">
+                  {loading ? "Signing in..." : `Sign in as ${active.label}`}
+                </Button>
 
                 <div className="relative py-1">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t" style={{ borderColor: "rgba(148,163,184,0.1)" }} />
+                    <div className="w-full border-t border-white/[0.06]" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="px-3 text-xs" style={{ color: "#64748B", background: "rgba(255,255,255,0.02)" }}>Or</span>
+                    <span className="px-3 text-xs text-muted-foreground bg-background">Or</span>
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleGoogleSignIn}
-                  className="w-full flex items-center justify-center gap-2.5 border py-2.5 rounded-lg text-sm transition-all"
-                  style={{ borderColor: "rgba(148,163,184,0.1)", color: "#CBD5E1" }}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.2)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)" }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.1)"; e.currentTarget.style.background = "transparent" }}
+                <button type="button" onClick={handleGoogleSignIn}
+                  className="w-full flex items-center justify-center gap-2.5 border border-white/[0.08] py-2.5 rounded text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-all duration-150"
                 >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.16H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.84l3.66-2.75z" fill="#FBBC05" />
-                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 2.09 12 1 7.7 1 3.99 3.47 2.18 7.16l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                  </svg>
-                  Google
+                  <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.832 1.24 6.926l4.026 2.839Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 2.859A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.545-5.09 3.545-9 0-.706-.109-1.472-.272-2.182H12v4.364h6.109c-.82 2.263-2.719 3.545-4.909 3.545a5.5 5.5 0 0 1-1.473-.205l-3.993 2.891A6.929 6.929 0 0 0 12 21c2.265 0 4.338-.676 5.834-2.987Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.926A11.922 11.922 0 0 0 0 12c0 1.92.445 3.73 1.237 5.34l4.04-3.072Z"/></svg>
+                  <span>Google</span>
                 </button>
               </form>
             </div>
           </div>
 
-          <p className="mt-6 text-sm text-center" style={{ color: "#64748B" }}>
+          <p className="mt-6 text-sm text-center text-muted-foreground">
             No account?{" "}
-            <Link href="/register" className="font-medium" style={{ color: active.color }}>
-              Create one
-            </Link>
+            <Link href="/register" className="font-medium text-primary">Create one</Link>
           </p>
         </div>
       </main>

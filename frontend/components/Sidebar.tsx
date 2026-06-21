@@ -4,10 +4,13 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard, Search, History,
-  BookmarkCheck, Zap, LogOut, Shield,
+  BookmarkCheck, Zap, LogOut,
   PanelLeftClose, PanelLeftOpen,
+  Settings,
 } from "lucide-react"
 import { logout, getUser } from "@/lib/auth"
+import { cn } from "@/lib/utils"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 const ALL_NAV = [
   { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard, roles: ["analyst", "viewer"] },
@@ -15,12 +18,13 @@ const ALL_NAV = [
   { href: "/history",   label: "History",       icon: History,         roles: ["analyst", "viewer"] },
   { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck,   roles: ["analyst"] },
   { href: "/live-db",   label: "Live DB Mode",  icon: Zap,             roles: ["analyst"] },
+  { href: "/settings",  label: "Settings",      icon: Settings,        roles: ["analyst", "viewer"] },
 ] as const
 
 const ROLE_META: Record<string, { label: string; color: string }> = {
-  admin:   { label: "Admin",   color: "#EF4444" },
-  analyst: { label: "Analyst", color: "#3B82F6" },
-  viewer:  { label: "Viewer",  color: "#22C55E" },
+  admin:   { label: "Admin",   color: "var(--mint-error)" },
+  analyst: { label: "Analyst", color: "var(--mint-tag)" },
+  viewer:  { label: "Viewer",  color: "var(--mint-green-deep)" },
 }
 
 function getInitials(name: string) {
@@ -55,48 +59,49 @@ export default function Sidebar() {
     : []
   const badge = ROLE_META[role]
 
-  const sidebarW = collapsed ? "w-[68px]" : "w-[240px]"
-
   return (
     <aside
-      className={`${sidebarW} min-h-screen flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out
-                  bg-[#050816] border-r border-white/[0.06]`}
+      className={cn(
+        "min-h-screen flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out",
+        "border-r border-border bg-card",
+        collapsed ? "w-16" : "w-60"
+      )}
     >
-      <div className={`flex items-center pt-5 pb-4 overflow-hidden transition-all duration-300 ${collapsed ? "justify-center px-0" : "px-5"}`}>
-        <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-[#14B8A6]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-          </svg>
-        </div>
+      <div className={cn(
+        "flex items-center pt-5 pb-4 overflow-hidden transition-all duration-300",
+        collapsed ? "justify-center px-0" : "px-4"
+      )}>
+        <SmartSQLLogo variant="icon" size={32} className="shrink-0" />
         {!collapsed && (
-          <h1 className="ml-2.5 text-sm font-bold text-[#F8FAFC] whitespace-nowrap overflow-hidden" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            Smart<span className="text-[#14B8A6]">SQL</span>
-          </h1>
+          <SmartSQLLogo variant="wordmark" className="ml-2.5 text-sm" />
         )}
       </div>
 
       {user && (
         <>
-          <div className={`flex items-center gap-3 pb-3 overflow-hidden transition-all duration-300 ${collapsed ? "justify-center px-0" : "px-5"}`}>
+          <div className={cn(
+            "flex items-center gap-3 pb-3 overflow-hidden transition-all duration-300",
+            collapsed ? "justify-center px-0" : "px-4"
+          )}>
             <div
-              className="shrink-0 rounded-full flex items-center justify-center text-xs font-bold text-white"
-              style={{ width: "36px", height: "36px", background: "#14B8A6" }}
+              className="shrink-0 rounded-full flex items-center justify-center text-xs font-semibold text-primary-foreground bg-primary"
+              style={{ width: "32px", height: "32px" }}
               title={collapsed ? (user.full_name ?? "") : undefined}
             >
               {getInitials(user.full_name ?? "U")}
             </div>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate text-[#F8FAFC]">
+                <p className="text-sm font-medium truncate text-foreground/90">
                   {user.full_name}
                 </p>
-                <p className="text-xs truncate text-[#64748B]">
+                <p className="text-xs truncate text-muted-foreground">
                   {user.email}
                 </p>
               </div>
             )}
           </div>
-          <div className="h-px mx-5 mb-2 bg-white/[0.06]" />
+          <div className="h-px mx-4 mb-2 bg-border" />
         </>
       )}
 
@@ -108,22 +113,20 @@ export default function Sidebar() {
               key={href}
               href={href}
               title={collapsed ? label : undefined}
-              className={`flex items-center rounded-lg font-medium transition-all duration-150 overflow-hidden group relative
-                ${collapsed ? "justify-center py-2.5" : "gap-3 px-3 py-2.5"}
-                ${active
-                  ? "bg-[#14B8A6]/10 text-[#14B8A6]"
-                  : "text-[#64748B] hover:text-[#F8FAFC] hover:bg-white/[0.04]"
-                }`}
+              className={cn(
+                "flex items-center rounded-md transition-colors duration-150 overflow-hidden group relative",
+                collapsed ? "justify-center py-2.5" : "gap-2.5 px-3 py-2",
+                active
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+              )}
             >
               {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-[#14B8A6]" />
+                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-accent" />
               )}
-              <Icon size={17} strokeWidth={active ? 2.5 : 1.8} className="shrink-0 transition-transform duration-150 group-hover:scale-110" />
+              <Icon size={16} strokeWidth={active ? 2.5 : 1.8} className="shrink-0" />
               {!collapsed && (
                 <span className="text-sm whitespace-nowrap">{label}</span>
-              )}
-              {active && !collapsed && (
-                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#14B8A6] animate-pulse-dot" />
               )}
             </Link>
           )
@@ -134,29 +137,30 @@ export default function Sidebar() {
         <button
           onClick={toggle}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex items-center w-full rounded-lg transition-all duration-150 text-sm font-medium
-            ${collapsed ? "justify-center py-2.5" : "gap-3 px-3 py-2.5"}
-            text-[#64748B]/50 hover:text-[#64748B] hover:bg-white/[0.04]`}
+          className={cn(
+            "flex items-center w-full rounded-md transition-colors duration-150 text-sm",
+            collapsed ? "justify-center py-2.5" : "gap-2.5 px-3 py-2",
+            "text-muted-foreground hover:bg-secondary hover:text-foreground"
+          )}
         >
           {collapsed
-            ? <PanelLeftOpen  size={17} className="shrink-0" />
-            : <PanelLeftClose size={17} className="shrink-0" />
+            ? <PanelLeftOpen  size={16} className="shrink-0" />
+            : <PanelLeftClose size={16} className="shrink-0" />
           }
           {!collapsed && <span>Collapse</span>}
         </button>
       </div>
 
-      <div className={`pt-2 pb-4 border-t border-white/[0.06] overflow-hidden transition-all duration-300 ${collapsed ? "px-0" : "px-5"}`}>
+      <div className={cn(
+        "pt-2 pb-4 border-t border-border overflow-hidden transition-all duration-300",
+        collapsed ? "px-0" : "px-4"
+      )}>
         {badge && !collapsed && (
           <div className="mb-2">
             <span
-              className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-md font-medium"
-              style={{
-                background: `${badge.color}15`,
-                color: badge.color,
-              }}
+              className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border border-border bg-secondary font-medium"
+              style={{ color: badge.color }}
             >
-              <Shield size={10} />
               {badge.label}
             </span>
           </div>
@@ -164,9 +168,11 @@ export default function Sidebar() {
         <button
           onClick={logout}
           title={collapsed ? "Sign out" : undefined}
-          className={`flex items-center w-full text-xs transition-colors
-            ${collapsed ? "justify-center" : "gap-2"}
-            text-[#64748B] hover:text-[#EF4444]`}
+          className={cn(
+            "flex items-center w-full text-xs transition-colors",
+            collapsed ? "justify-center" : "gap-2",
+            "text-muted-foreground hover:text-destructive"
+          )}
         >
           <LogOut size={14} className="shrink-0" />
           {!collapsed && <span>Sign out</span>}

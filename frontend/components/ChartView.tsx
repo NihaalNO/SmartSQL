@@ -7,7 +7,7 @@ import {
 } from "recharts"
 import { BarChart3, TrendingUp, PieChart as PieIcon, Activity } from "lucide-react"
 
-const COLORS = ["#14B8A6", "#22C55E", "#60A5FA", "#F59E0B", "#EF4444", "#22D3EE", "#8B5CF6"]
+const COLORS = ["var(--mint-green)", "var(--mint-tag)", "var(--mint-warn)", "var(--mint-error)", "var(--mint-green-soft)"]
 
 type ChartType = "bar" | "line" | "pie" | "area"
 
@@ -42,24 +42,19 @@ export default function ChartView({ columns, rows }: Props) {
   }))
 
   return (
-    <div className="rounded-lg border overflow-hidden" style={{
-      borderColor: "rgba(148,163,184,0.1)",
-      background: "rgba(255,255,255,0.02)",
-    }}>
-      <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: "rgba(148,163,184,0.06)" }}>
-        <span className="text-sm font-medium text-[#CBD5E1]">Chart View</span>
-        <div className="flex gap-0.5 rounded-md p-0.5" style={{ background: "rgba(0,0,0,0.2)" }}>
+    <div className="mint-card overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
+        <span className="text-sm font-medium text-foreground/80">Chart View</span>
+        <div className="flex gap-0.5 rounded-full bg-secondary p-1">
           {(["bar", "line", "area", "pie"] as ChartType[]).map((t) => (
             <button
               key={t}
               onClick={() => setChartType(t)}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors"
+              className="flex cursor-pointer items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors"
               style={{
-                background: chartType === t ? "rgba(20,184,166,0.15)" : "transparent",
-                color: chartType === t ? "#14B8A6" : "#64748B",
+                background: chartType === t ? "var(--mint-canvas)" : "transparent",
+                color: chartType === t ? "var(--mint-ink)" : "var(--mint-steel)",
               }}
-              onMouseEnter={e => { if (chartType !== t) e.currentTarget.style.color = "#CBD5E1" }}
-              onMouseLeave={e => { if (chartType !== t) e.currentTarget.style.color = "#64748B" }}
             >
               {CHART_ICONS[t]}
               {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -73,43 +68,43 @@ export default function ChartView({ columns, rows }: Props) {
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "bar" ? (
               <BarChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.06)" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
-                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
-                <Bar dataKey="value" fill="#14B8A6" radius={[3, 3, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mint-hairline-soft)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--mint-steel)" }} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--mint-steel)" }} />
+                <Tooltip contentStyle={{ background: "var(--mint-canvas)", border: "1px solid var(--mint-hairline)", borderRadius: "8px", color: "var(--mint-ink)", fontSize: "12px" }} />
+                <Bar dataKey="value" fill="var(--mint-green)" radius={[3, 3, 0, 0]} />
               </BarChart>
             ) : chartType === "line" ? (
               <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.06)" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
-                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
-                <Line type="monotone" dataKey="value" stroke="#14B8A6" strokeWidth={2} dot={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mint-hairline-soft)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--mint-steel)" }} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--mint-steel)" }} />
+                <Tooltip contentStyle={{ background: "var(--mint-canvas)", border: "1px solid var(--mint-hairline)", borderRadius: "8px", color: "var(--mint-ink)", fontSize: "12px" }} />
+                <Line type="monotone" dataKey="value" stroke="var(--mint-green)" strokeWidth={2} dot={false} />
               </LineChart>
             ) : chartType === "area" ? (
               <AreaChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.06)" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#64748B" }} />
-                <YAxis tick={{ fontSize: 10, fill: "#64748B" }} />
-                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
-                <Area type="monotone" dataKey="value" stroke="#14B8A6" fill="#14B8A6" fillOpacity={0.1} strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--mint-hairline-soft)" />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: "var(--mint-steel)" }} />
+                <YAxis tick={{ fontSize: 10, fill: "var(--mint-steel)" }} />
+                <Tooltip contentStyle={{ background: "var(--mint-canvas)", border: "1px solid var(--mint-hairline)", borderRadius: "8px", color: "var(--mint-ink)", fontSize: "12px" }} />
+                <Area type="monotone" dataKey="value" stroke="var(--mint-green)" fill="var(--mint-green)" fillOpacity={0.12} strokeWidth={2} />
               </AreaChart>
             ) : (
               <PieChart>
-                <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={{ fill: "#64748B", fontSize: 10 }}>
+                <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={{ fill: "var(--mint-steel)", fontSize: 10 }}>
                   {data.map((_, idx) => (
                     <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ background: "#0A1020", border: "1px solid rgba(148,163,184,0.1)", borderRadius: "6px", color: "#CBD5E1", fontSize: "12px" }} />
-                <Legend wrapperStyle={{ color: "#64748B", fontSize: "11px" }} />
+                <Tooltip contentStyle={{ background: "var(--mint-canvas)", border: "1px solid var(--mint-hairline)", borderRadius: "8px", color: "var(--mint-ink)", fontSize: "12px" }} />
+                <Legend wrapperStyle={{ color: "var(--mint-steel)", fontSize: "11px" }} />
               </PieChart>
             )}
           </ResponsiveContainer>
         </div>
-        <p className="text-xs mt-2" style={{ color: "#64748B" }}>
-          Showing <span style={{ color: "#CBD5E1" }}>{label}</span> vs <span style={{ color: "#CBD5E1" }}>{value}</span> (up to 50 rows)
+        <p className="text-xs mt-2 text-muted-foreground">
+          Showing <span className="text-foreground/80">{label}</span> vs <span className="text-foreground/80">{value}</span> (up to 50 rows)
         </p>
       </div>
     </div>

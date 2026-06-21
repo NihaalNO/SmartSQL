@@ -7,6 +7,7 @@ import { saveAuth } from "@/lib/auth/session"
 import { getGoogleRedirectUri } from "@/lib/auth/google"
 import { supabase } from "@/lib/supabase"
 import toast from "react-hot-toast"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 export const dynamic = 'force-dynamic'
 
@@ -113,14 +114,25 @@ export default function AuthCallbackPage() {
   }, [router])
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center" style={{ background: "#050816" }}>
-      <div className="text-center py-12 animate-fade-in-up">
-        <div className="w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(20,184,166,0.1)" }}>
-          <div className="w-5 h-5 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }} />
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="border-b border-border bg-card/95">
+        <div className="max-w-6xl mx-auto px-6 flex items-center h-16">
+          <div className="flex items-center gap-2.5">
+            <SmartSQLLogo size={32} className="text-sm" />
+          </div>
         </div>
-        <h2 className="text-lg font-bold mb-2" style={{ color: "#F8FAFC" }}>{message}</h2>
-        <p className="text-sm" style={{ color: "#64748B" }}>This should only take a moment.</p>
-      </div>
+      </header>
+
+      <main className="flex-1 flex items-center justify-center px-4 py-16">
+        <div className="mint-card w-full max-w-sm p-8 text-center animate-fade-in-up">
+          <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 bg-secondary">
+            <SmartSQLLogo variant="icon" size={28} className="animate-pulse" />
+          </div>
+          <p className="mint-kicker">Authentication</p>
+          <h1 className="text-lg font-semibold mt-2 mb-2 text-foreground">{message}</h1>
+          <p className="text-sm text-muted-foreground">This should only take a moment.</p>
+        </div>
+      </main>
     </div>
   )
 }

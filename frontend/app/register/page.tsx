@@ -4,18 +4,15 @@ import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import toast from "react-hot-toast"
-import {
-  BarChart2,
-  Eye,
-  EyeOff,
-  CheckCircle2,
-} from "lucide-react"
+import { BarChart2, Eye, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
 
 import { authApi } from "@/lib/api"
 import { getAuthDisplayError } from "@/lib/auth/errors"
 import { startSmartSqlGoogleAuth } from "@/lib/auth/google"
 import { supabase } from "@/lib/supabase"
+import { Button } from "@/components/ui/button"
+import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 type RoleId = "analyst" | "viewer"
 
@@ -26,13 +23,8 @@ const ROLES = [
     icon: BarChart2,
     tagline: "Data Explorer",
     description: "Query and visualise data at scale",
-    perks: [
-      "Run text-to-SQL queries",
-      "Save & manage queries",
-      "Connect live databases",
-      "Chart & visualise results",
-    ],
-    color: "#14B8A6",
+    perks: ["Run text-to-SQL queries", "Save & manage queries", "Connect live databases", "Chart & visualise results"],
+    color: "#533AFD",
   },
   {
     id: "viewer",
@@ -40,13 +32,8 @@ const ROLES = [
     icon: Eye,
     tagline: "Read-Only Access",
     description: "Explore shared insights safely",
-    perks: [
-      "Browse query history",
-      "View shared results",
-      "Read-only data access",
-      "No write permissions",
-    ],
-    color: "#60A5FA",
+    perks: ["Browse query history", "View shared results", "Read-only data access", "No write permissions"],
+    color: "#22C55E",
   },
 ] as const
 
@@ -97,28 +84,21 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#050816" }}>
-      <header className="sticky top-0 z-50 border-b border-white/[0.06]" style={{ background: "rgba(5,8,22,0.92)" }}>
-        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-14">
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="sticky top-0 z-50 border-b border-border bg-card/95 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md flex items-center justify-center bg-[#14B8A6]">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-              </svg>
-            </div>
-            <span className="text-sm font-bold text-[#F8FAFC]">SmartSQL</span>
+            <SmartSQLLogo size={32} className="text-sm" />
           </Link>
-          <Link href="/login" className="text-sm" style={{ color: "#64748B" }}>
-            Sign in
-          </Link>
+          <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Sign in</Link>
         </div>
       </header>
 
-      <main className="flex-grow flex justify-center px-4 py-10">
+      <main className="flex-1 flex justify-center px-4 py-12">
         <div className="w-full max-w-lg">
           <div className="text-center mb-8">
-            <h1 className="text-xl font-bold text-[#F8FAFC] mb-1.5">Create your account</h1>
-            <p className="text-sm" style={{ color: "#64748B" }}>Select your role to get the right level of access</p>
+            <h1 className="heading-md text-foreground mb-1">Create your account</h1>
+            <p className="body-sm text-muted-foreground">Select your role to get the right level of access</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-5">
@@ -126,124 +106,121 @@ export default function RegisterPage() {
               const Icon = role.icon
               const isActive = selectedRole === role.id
               return (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => setSelectedRole(role.id)}
-                  className="relative p-4 rounded-lg border transition-all duration-300"
+                <button key={role.id} type="button" onClick={() => setSelectedRole(role.id)}
+                  className="relative p-4 rounded border transition-all duration-200 text-center"
                   style={{
-                    backgroundColor: isActive ? `${role.color}10` : "rgba(255,255,255,0.02)",
-                    borderColor: isActive ? role.color : "rgba(148,163,184,0.1)",
-                  }}
-                >
-                  {isActive && <CheckCircle2 className="absolute top-2.5 right-2.5" size={16} style={{ color: role.color }} />}
-                  <div className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2.5"
-                    style={{ background: isActive ? role.color : "rgba(255,255,255,0.06)" }}>
-                    <Icon size={18} color={isActive ? "#fff" : "#64748B"} />
+                    background: isActive ? `${role.color}08` : "transparent",
+                    borderColor: isActive ? `${role.color}40` : "rgba(255,255,255,0.06)",
+                  }}>
+                  {isActive && <CheckCircle2 className="absolute top-3 right-3" size={14} style={{ color: role.color }} />}
+                  <div className="w-10 h-10 rounded flex items-center justify-center mx-auto mb-2"
+                    style={{ background: isActive ? role.color : "rgba(255,255,255,0.04)" }}>
+                    <Icon size={18} color={isActive ? "#fff" : "rgba(255,255,255,0.3)"} />
                   </div>
-                  <h3 className="text-sm font-semibold text-center" style={{ color: isActive ? role.color : "#CBD5E1" }}>
-                    {role.label}
-                  </h3>
-                  <p className="text-xs text-center" style={{ color: "#64748B" }}>{role.tagline}</p>
+                  <h3 className="text-sm font-medium text-foreground">{role.label}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{role.tagline}</p>
                 </button>
               )
             })}
           </div>
 
-          <div className="rounded-lg border p-4 mb-5" style={{ borderColor: "rgba(148,163,184,0.1)", background: "rgba(255,255,255,0.02)" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <ActiveIcon size={14} style={{ color: active.color }} />
-              <span className="text-sm font-medium" style={{ color: active.color }}>
-                {active.label} — {active.description}
-              </span>
+          <div className="flex items-start gap-2.5 p-4 rounded border mb-5"
+            style={{
+              background: `${active.color}06`,
+              borderColor: `${active.color}15`,
+            }}>
+            <ActiveIcon size={14} className="mt-0.5 shrink-0" style={{ color: active.color }} />
+            <div>
+              <p className="text-sm font-medium mb-2" style={{ color: active.color }}>
+                {active.label} &mdash; {active.description}
+              </p>
+              <ul className="grid md:grid-cols-2 gap-1">
+                {active.perks.map((perk) => (
+                  <li key={perk} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CheckCircle2 size={10} style={{ color: active.color }} />
+                    {perk}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <ul className="grid md:grid-cols-2 gap-1.5">
-              {active.perks.map((perk) => (
-                <li key={perk} className="flex items-center gap-2 text-xs" style={{ color: "#CBD5E1" }}>
-                  <CheckCircle2 size={12} style={{ color: active.color }} />
-                  {perk}
-                </li>
-              ))}
-            </ul>
           </div>
 
-          <div className="rounded-lg overflow-hidden border" style={{ borderColor: "rgba(148,163,184,0.1)" }}>
-            <div className="h-1" style={{ background: active.color }} />
-            <div className="p-6" style={{ background: "rgba(255,255,255,0.02)" }}>
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                className="w-full h-10 rounded-lg border flex items-center justify-center gap-2.5 text-sm transition-all"
-                style={{ borderColor: "rgba(148,163,184,0.1)", color: "#CBD5E1" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.2)"; e.currentTarget.style.background = "rgba(255,255,255,0.03)" }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "rgba(148,163,184,0.1)"; e.currentTarget.style.background = "transparent" }}
+          <div className="rounded border border-white/[0.06] overflow-hidden">
+            <div className="h-0.5 bg-primary" />
+            <div className="p-6">
+              <button type="button" onClick={handleGoogleSignUp}
+                className="w-full flex items-center justify-center gap-2.5 border border-white/[0.08] py-2.5 rounded text-sm text-muted-foreground hover:text-foreground hover:bg-white/[0.04] transition-all duration-150 mb-4"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.16H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.84l3.66-2.75z" fill="#FBBC05" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 2.09 12 1 7.7 1 3.99 3.47 2.18 7.16l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-                </svg>
-                Sign up with Google
+                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#EA4335" d="M5.266 9.765A7.077 7.077 0 0 1 12 4.909c1.69 0 3.218.6 4.418 1.582L19.91 3C17.782 1.145 15.055 0 12 0 7.27 0 3.198 2.832 1.24 6.926l4.026 2.839Z"/><path fill="#34A853" d="M16.04 18.013c-1.09.703-2.474 1.078-4.04 1.078a7.077 7.077 0 0 1-6.723-4.823l-4.04 2.859A11.965 11.965 0 0 0 12 24c2.933 0 5.735-1.043 7.834-3l-3.793-2.987Z"/><path fill="#4A90E2" d="M19.834 21c2.195-2.048 3.545-5.09 3.545-9 0-.706-.109-1.472-.272-2.182H12v4.364h6.109c-.82 2.263-2.719 3.545-4.909 3.545a5.5 5.5 0 0 1-1.473-.205l-3.993 2.891A6.929 6.929 0 0 0 12 21c2.265 0 4.338-.676 5.834-2.987Z"/><path fill="#FBBC05" d="M5.277 14.268A7.12 7.12 0 0 1 4.909 12c0-.782.125-1.533.357-2.235L1.24 6.926A11.922 11.922 0 0 0 0 12c0 1.92.445 3.73 1.237 5.34l4.04-3.072Z"/></svg>
+                <span>Sign up with Google</span>
               </button>
 
-              <div className="my-4 text-center text-xs" style={{ color: "#64748B" }}>OR CONTINUE WITH EMAIL</div>
-
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-3.5">
-                <input
-                  {...register("full_name", { required: "Name is required" })}
-                  placeholder="Full Name"
-                  className="surface-input w-full h-10 px-3 text-sm"
-                  style={{ borderColor: "rgba(148,163,184,0.15)" }}
-                />
-                {errors.full_name && <p className="text-xs" style={{ color: "#EF4444" }}>{errors.full_name.message}</p>}
-
-                <input
-                  {...register("email", { required: "Email is required", pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter valid email" } })}
-                  placeholder="Email"
-                  className="surface-input w-full h-10 px-3 text-sm"
-                  style={{ borderColor: "rgba(148,163,184,0.15)" }}
-                />
-                {errors.email && <p className="text-xs" style={{ color: "#EF4444" }}>{errors.email.message}</p>}
-
-                <div className="relative">
-                  <input
-                    {...register("password", { required: "Password is required", minLength: { value: 8, message: "Minimum 8 characters" } })}
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    className="surface-input w-full h-10 px-3 pr-10 text-sm"
-                    style={{ borderColor: "rgba(148,163,184,0.15)" }}
-                  />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: "#64748B" }}>
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+              <div className="relative py-1 mb-4">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/[0.06]" />
                 </div>
-                {errors.password && <p className="text-xs" style={{ color: "#EF4444" }}>{errors.password.message}</p>}
+                <div className="relative flex justify-center">
+                  <span className="px-3 text-xs text-muted-foreground bg-background">OR CONTINUE WITH EMAIL</span>
+                </div>
+              </div>
 
-                <label className="flex items-center gap-2 text-sm" style={{ color: "#CBD5E1" }}>
-                  <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="accent-[#14B8A6]" />
-                  I agree to Terms & Privacy Policy
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground/80" htmlFor="full_name">Full Name</label>
+                  <input id="full_name" {...register("full_name", { required: true })}
+                    placeholder="Jane Smith"
+                    className="w-full px-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground/80" htmlFor="email">Email</label>
+                  <input id="email" type="email" {...register("email", { required: true })}
+                    placeholder="jane@company.com"
+                    className="w-full px-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-foreground/80" htmlFor="password">Password</label>
+                  <div className="relative">
+                    <input id="password" type={showPassword ? "text" : "password"} {...register("password", { required: true, minLength: 8 })}
+                      placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                      className="w-full px-3 py-2.5 text-sm bg-white/[0.04] border border-white/[0.08] rounded text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15 transition-all duration-150"
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 hover:text-muted-foreground">
+                      {showPassword ? (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <label className="flex items-start gap-2 cursor-pointer">
+                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                    className="mt-0.5 accent-primary"
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    I agree to the{" "}
+                    <span className="text-primary">Terms of Service</span> and{" "}
+                    <span className="text-primary">Privacy Policy</span>
+                  </span>
                 </label>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full h-10 rounded-lg text-sm font-semibold text-white disabled:opacity-50 transition-all"
-                  style={{ background: active.color }}
-                >
-                  {loading ? "Creating..." : `Create ${active.label} Account`}
-                </button>
+                <Button type="submit" disabled={loading} variant="primary" className="w-full h-11">
+                  {loading ? "Creating account..." : `Create ${active.label} Account`}
+                </Button>
               </form>
-
-              <p className="mt-5 text-sm text-center" style={{ color: "#64748B" }}>
-                Already have an account?{" "}
-                <Link href="/login" className="font-medium" style={{ color: active.color }}>
-                  Login
-                </Link>
-              </p>
             </div>
           </div>
+
+          <p className="mt-6 text-sm text-center text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="font-medium text-primary">Sign in</Link>
+          </p>
         </div>
       </main>
     </div>

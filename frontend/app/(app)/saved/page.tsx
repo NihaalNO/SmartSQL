@@ -34,53 +34,48 @@ export default function SavedPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-5 animate-fade-in-up">
+    <div className="mint-page-narrow">
       <div>
-        <h1 className="text-lg font-bold text-[#F8FAFC]">Saved Queries</h1>
-        <p className="text-xs mt-0.5" style={{ color: "#64748B" }}>Your bookmarked and favorite queries</p>
+        <p className="mint-kicker">Library</p>
+        <h1 className="mint-title mt-2">Saved Queries</h1>
+        <p className="mint-subtitle mt-2">Your bookmarked and favorite queries</p>
       </div>
 
       {loading ? (
-        <div className="flex items-center gap-3 py-8" style={{ color: "#64748B" }}>
-          <div className="w-4 h-4 rounded-full border-2 animate-spin" style={{ borderColor: "rgba(20,184,166,0.3)", borderTopColor: "#14B8A6" }} />
-          <span className="text-sm">Loading…</span>
+        <div className="flex items-center gap-3 py-8 text-muted-foreground">
+          <div className="w-4 h-4 rounded-full border-2 border-accent/30 border-t-accent animate-spin" />
+          <span className="text-sm">Loading&hellip;</span>
         </div>
       ) : queries.length === 0 ? (
-        <div className="rounded-lg border py-12 text-center" style={{ borderColor: "rgba(148,163,184,0.08)", background: "rgba(255,255,255,0.02)" }}>
-          <BookmarkCheck size={28} style={{ color: "rgba(148,163,184,0.3)" }} className="mx-auto mb-3" />
-          <p className="text-sm" style={{ color: "#64748B" }}>No saved queries yet</p>
-          <p className="text-xs mt-1" style={{ color: "rgba(148,163,184,0.5)" }}>Run a query and click &quot;Save&quot; to add it here</p>
+        <div className="mint-card py-12 text-center">
+          <BookmarkCheck size={28} className="text-muted-foreground/30 mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">No saved queries yet</p>
+          <p className="text-xs mt-1 text-muted-foreground/50">Run a query and click &quot;Save&quot; to add it here</p>
         </div>
       ) : (
-        <div className="rounded-lg border overflow-hidden" style={{ borderColor: "rgba(148,163,184,0.08)" }}>
+        <div className="mint-table">
           {queries.map((q) => (
-            <div key={q.id} className="border-b last:border-0" style={{ borderColor: "rgba(148,163,184,0.05)" }}>
+            <div key={q.id} className="border-b border-border last:border-0">
               <div className="flex items-start gap-3 px-4 py-3">
-                {q.is_favorite && <Star size={14} style={{ color: "#F59E0B", fill: "#F59E0B" }} className="shrink-0 mt-1" />}
+                {q.is_favorite && <Star size={14} className="text-amber-400 fill-amber-400 shrink-0 mt-1" />}
                 <div className="flex-1 min-w-0">
                   <button onClick={() => setExpanded(expanded === q.id ? null : q.id)} className="text-left w-full">
-                    <p className="text-sm font-semibold text-[#CBD5E1]">{q.title}</p>
-                    <p className="text-xs mt-0.5 truncate" style={{ color: "#64748B" }}>{q.natural_language_query}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "rgba(148,163,184,0.5)" }}>{new Date(q.created_at).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium text-foreground">{q.title}</p>
+                    <p className="text-xs mt-0.5 truncate text-muted-foreground">{q.natural_language_query}</p>
+                    <p className="text-xs mt-0.5 text-muted-foreground/50">{new Date(q.created_at).toLocaleDateString()}</p>
                   </button>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => router.push(`/query?q=${encodeURIComponent(q.natural_language_query)}`)}
-                    className="p-1.5 rounded transition-colors"
-                    style={{ color: "#64748B" }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "#14B8A6"; e.currentTarget.style.background = "rgba(20,184,166,0.1)" }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "#64748B"; e.currentTarget.style.background = "transparent" }}
+                    className="cursor-pointer p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
                     title="Run again"
                   >
                     <Play size={14} />
                   </button>
                   <button
                     onClick={() => deleteQuery(q.id)}
-                    className="p-1.5 rounded transition-colors"
-                    style={{ color: "#64748B" }}
-                    onMouseEnter={e => { e.currentTarget.style.color = "#EF4444"; e.currentTarget.style.background = "rgba(239,68,68,0.1)" }}
-                    onMouseLeave={e => { e.currentTarget.style.color = "#64748B"; e.currentTarget.style.background = "transparent" }}
+                    className="cursor-pointer p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={14} />
@@ -89,7 +84,7 @@ export default function SavedPage() {
               </div>
 
               {expanded === q.id && (
-                <div className="px-4 pb-3">
+                <div className="px-4 pb-3 animate-slide-in-right">
                   <pre className="sql-block text-xs">{q.generated_sql}</pre>
                 </div>
               )}
