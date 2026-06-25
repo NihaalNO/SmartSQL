@@ -177,7 +177,7 @@ const TEXT_TO_SQL_PROMPT = (schema: string): string =>
   `user's own table/column names):\n${schema}`;
 
 const INSIGHT_PROMPT = (): string =>
-  `You are a data analyst assistant. Given a SQL query result, provide a concise ` +
+  `You are a data assistant. Given a SQL query result, provide a concise ` +
   `natural-language insight (2-4 sentences). Focus on patterns, anomalies, and key takeaways. ` +
   `Do not repeat the raw numbers verbatim.`;
 

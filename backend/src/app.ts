@@ -15,8 +15,8 @@ import { errorHandler } from "./middlewares/error.middleware";
 import authRouter from "./routes/auth.routes";
 import queryRouter from "./routes/query.routes";
 import schemaRouter from "./routes/schema.routes";
-import adminRouter from "./routes/admin.routes";
 import healthRouter from "./routes/health.routes";
+import liveDbRouter from "./routes/liveDb.routes";
 
 // ---------------------------------------------------------------------------
 // Express app factory
@@ -64,7 +64,7 @@ export function createApp(): Application {
   app.use("/api/auth", authRouter);
   app.use("/api/queries", queryRouter);
   app.use("/api/schema", schemaRouter);
-  app.use("/api/admin", adminRouter);
+  app.use("/api/live-db", liveDbRouter);
   app.use("/", healthRouter);
 
   // Global error handler — MUST be the last middleware

@@ -8,89 +8,26 @@ datasource db {
 }
 
 // ============================================================================
-// Lookup / identity tables
+// Identity tables
 // ============================================================================
-
-model Role {
-  id        Int      @id @default(autoincrement()) @map("id")
-  name      String   @map("name")
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  users User[]
-
-  @@map("roles")
-}
 
 model User {
   id          Int    @id @default(autoincrement()) @map("id")
   supabaseUid String? @unique @map("supabase_uid") @db.Uuid()
   fullName    String  @map("full_name")
   email       String  @unique @map("email")
+  avatarUrl   String? @map("avatar_url")
   emailVerifiedAt   DateTime?   @map("email_verified_at") @db.Timestamptz()
-  roleId      Int     @map("role_id")
   status      String  @default("active") @map("status")
   createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz()
 
-  role            Role             @relation(fields: [roleId], references: [id])
-  adminProfile    AdminUser?
-  analystProfile  AnalystUser?
-  viewerProfile   ViewerUser?
   savedQueries    SavedQuery[]
   queryLogs       QueryLog[]
   chartPreference ChartPreference?
   liveDbSessions  LiveDbSession[]
 
   @@map("users")
-}
-
-// ============================================================================
-// Role-specific profile tables (1:1 with users, keyed on user_id)
-// ============================================================================
-
-model AdminUser {
-  id                      Int     @id @map("user_id")
-  department              String? @map("department")
-  canManageUsers          Boolean @default(true) @map("can_manage_users")
-  canConfigureDatasources Boolean @default(true) @map("can_configure_datasources")
-  seeAllQueryLogs         Boolean @default(true) @map("see_all_query_logs")
-  canManageDatasets       Boolean @default(true) @map("can_manage_datasets")
-  lastDashboardVisitAt    DateTime? @map("last_dashboard_visit_at") @db.Timestamptz()
-  totalUsersManaged       Int      @default(0) @map("total_users_managed")
-  createdAt               DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  user User @relation(fields: [id], references: [id], onDelete: Cascade)
-
-  @@map("admin_users")
-}
-
-model AnalystUser {
-  id                     Int     @id @map("user_id")
-  preferredModelProvider String @default("groq") @map("preferred_model_provider")
-  preferredModelName     String @default("llama-3.3-70b-versatile") @map("preferred_model_name")
-  maxSavedQueries        Int     @default(100) @map("max_saved_queries")
-  canUseLiveDb           Boolean @default(true) @map("can_use_live_db")
-  totalQueriesRun        Int     @default(0) @map("total_queries_run")
-  totalSavedQueries      Int     @default(0) @map("total_saved_queries")
-  lastQueryAt            DateTime? @map("last_query_at") @db.Timestamptz()
-  createdAt              DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  user User @relation(fields: [id], references: [id], onDelete: Cascade)
-
-  @@map("analyst_users")
-}
-
-model ViewerUser {
-  id             Int     @id @map("user_id")
-  readOnly       Boolean @default(true) @map("read_only")
-  canExportResults Boolean @default(false) @map("can_export_results")
-  lastViewedAt   DateTime? @map("last_viewed_at") @db.Timestamptz()
-  totalViews     Int     @default(0) @map("total_views")
-  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
-
-  user User @relation(fields: [id], references: [id], onDelete: Cascade)
-
-  @@map("viewer_users")
 }
 
 // ============================================================================

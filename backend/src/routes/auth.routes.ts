@@ -25,14 +25,6 @@ router.post(
   asyncHandler(AuthController.login)
 );
 
-// POST /api/auth/admin-login
-router.post(
-  "/admin-login",
-  authLimiter,
-  validateBody(schema.adminLoginSchema),
-  asyncHandler(AuthController.adminLogin)
-);
-
 // POST /api/auth/login/google (Google OAuth callback)
 router.post(
   "/login/google",

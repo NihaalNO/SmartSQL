@@ -42,7 +42,6 @@ export default function AuthCallbackPage() {
             user_id: 0,
             full_name: "",
             email: session.user?.email || "",
-            role: "",
             access_token: session.access_token,
             email_verified: !!session.user?.email_confirmed_at,
           })
@@ -53,9 +52,11 @@ export default function AuthCallbackPage() {
             user_id: userData.id,
             full_name: userData.full_name,
             email: userData.email,
-            role: userData.role,
             access_token: session.access_token,
             email_verified: !!session.user?.email_confirmed_at,
+            created_at: userData.created_at,
+            updated_at: userData.updated_at,
+            avatar_url: userData.avatar_url,
           })
 
           const redirectUrl = urlParams.get('redirect_to') || '/dashboard'
@@ -78,7 +79,6 @@ export default function AuthCallbackPage() {
             user_id: 0,
             full_name: "",
             email: s.user?.email || "",
-            role: "",
             access_token: s.access_token,
             email_verified: !!s.user?.email_confirmed_at,
           })
@@ -88,9 +88,11 @@ export default function AuthCallbackPage() {
             user_id: userData.id,
             full_name: userData.full_name,
             email: userData.email,
-            role: userData.role,
             access_token: s.access_token,
             email_verified: !!s.user?.email_confirmed_at,
+            created_at: userData.created_at,
+            updated_at: userData.updated_at,
+            avatar_url: userData.avatar_url,
           })
 
           router.push('/dashboard')

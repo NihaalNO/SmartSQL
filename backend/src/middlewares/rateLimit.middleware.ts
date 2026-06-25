@@ -14,7 +14,7 @@ export const generalLimiter = rateLimit({
 
 /**
  * Stricter rate limiter for auth endpoints — 5 requests per 15 minutes per IP.
- * Applied to login, register, and admin-login routes.
+ * Applied to login and register routes.
  */
 export const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes

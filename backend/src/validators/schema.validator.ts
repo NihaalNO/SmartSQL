@@ -5,10 +5,6 @@ export const userStatusUpdateSchema = z.object({
   status: z.enum(["active", "inactive"]),
 });
 
-export const userRoleUpdateSchema = z.object({
-  role_name: z.enum(["analyst", "viewer"]),
-});
-
 export const externalVisualizeSchema = z.object({
   db_host: z.string().min(1, "db_host is required"),
   db_port: z.number().int().min(1).max(65535).optional().default(5432),

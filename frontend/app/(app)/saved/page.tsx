@@ -3,7 +3,6 @@ import { useEffect, useState } from "react"
 import { BookmarkCheck, Star, Trash2, Play } from "lucide-react"
 import toast from "react-hot-toast"
 import { queryApi } from "@/lib/api"
-import { canSaveQueries } from "@/lib/auth"
 import type { SavedQuery } from "@/types"
 import { useRouter } from "next/navigation"
 
@@ -12,10 +11,6 @@ export default function SavedPage() {
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<number | null>(null)
   const router = useRouter()
-
-  useEffect(() => {
-    if (!canSaveQueries()) router.replace("/dashboard")
-  }, [router])
 
   const load = () => {
     queryApi.savedList().then(setQueries).finally(() => setLoading(false))

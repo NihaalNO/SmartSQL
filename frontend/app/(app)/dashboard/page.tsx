@@ -1,18 +1,12 @@
 "use client"
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { Search, History, BookmarkCheck, Zap, TrendingUp, Clock, Shield, BarChart2, Eye } from "lucide-react"
+import { Search, History, BookmarkCheck, Zap, TrendingUp, Clock } from "lucide-react"
 import { queryApi } from "@/lib/api"
-import { getUser, isAdmin, canSaveQueries, canUseLiveDb, getRole } from "@/lib/auth"
+import { getUser } from "@/lib/auth"
 import type { QueryLog } from "@/types"
 import { cn } from "@/lib/utils"
 import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
-
-const ROLE_META: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-  admin:   { icon: Shield,    label: "Admin",   color: "var(--mint-error)" },
-  analyst: { icon: BarChart2, label: "Analyst", color: "var(--mint-tag)" },
-  viewer:  { icon: Eye,       label: "Viewer",  color: "var(--mint-green-deep)" },
-}
 
 function StatCard({ label, value, icon, href, color }: { label: string; value: string | number; icon: React.ReactNode; href: string; color?: string }) {
   return (
@@ -41,28 +35,24 @@ export default function DashboardPage() {
   const [logs, setLogs]   = useState<QueryLog[]>([])
   const [saved, setSaved] = useState<number>(0)
 
-  const user    = mounted ? getUser()        : null
-  const role    = mounted ? getRole()        : ""
-  const canSave = mounted ? canSaveQueries() : false
-  const canLive = mounted ? canUseLiveDb()   : false
-  const admin   = mounted ? isAdmin()        : false
+  const user = mounted ? getUser() : null
 
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     if (!mounted) return
     queryApi.history(10).then(setLogs).catch(() => {})
-    if (canSave) queryApi.savedList().then((d) => setSaved(d.length)).catch(() => {})
+    queryApi.savedList().then((d) => setSaved(d.length)).catch(() => {})
   }, [mounted])
 
   const successCount = logs.filter((l) => l.execution_status === "success").length
   const avgTime = logs.length > 0 ? Math.round(logs.reduce((a, b) => a + (b.execution_time_ms || 0), 0) / logs.length) : 0
 
   const quickActions = [
-    { href: "/query",   icon: <Search size={17} />,       label: "Run a Query",    desc: "Ask anything in plain English", show: true,      color: "var(--mint-green-deep)" },
-    { href: "/saved",   icon: <BookmarkCheck size={17} />, label: "Saved Queries",  desc: "Revisit your favourite reports", show: canSave,  color: "var(--mint-tag)" },
-    { href: "/live-db", icon: <Zap size={17} />,           label: "Live DB Mode",   desc: "Connect a Supabase database",   show: canLive,  color: "var(--mint-warn)" },
-  ].filter((a) => a.show)
+    { href: "/query", icon: <Search size={17} />, label: "Run a Query", desc: "Ask anything in plain English", color: "var(--mint-green-deep)" },
+    { href: "/saved", icon: <BookmarkCheck size={17} />, label: "Saved Queries", desc: "Revisit your favourite reports", color: "var(--mint-tag)" },
+    { href: "/live-db", icon: <Zap size={17} />, label: "Live DB Mode", desc: "Connect a database for this session", color: "var(--mint-warn)" },
+  ]
 
   return (
     <div className="mint-page">
@@ -77,34 +67,19 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-          {(() => {
-            const meta = role ? ROLE_META[role] : null
-            if (!meta) return null
-            const Icon = meta.icon
-            return (
-              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-secondary px-2 py-0.5 text-xs font-medium"
-                style={{ color: meta.color }}>
-                <Icon size={11} />
-                {meta.label}
-              </span>
-            )
-          })()}
-        </div>
+        {user && (
+          <div className="text-right">
+            <p className="text-sm font-medium text-foreground">{user.full_name}</p>
+            <p className="text-xs text-muted-foreground">{user.email}</p>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Queries Executed"  value={logs.length}    icon={<TrendingUp size={17} />}  href="/history" color="var(--mint-green-deep)" />
         <StatCard label="Successful"         value={successCount}   icon={<Clock size={17} />}       href="/history" color="var(--mint-green-deep)" />
         <StatCard label="Avg. Execution"     value={avgTime > 0 ? `${avgTime}ms` : "\u2014"}        icon={<Zap size={17} />} href="/history" color="var(--mint-tag)" />
-        {canSave ? (
-          <StatCard label="Saved Queries"    value={saved}          icon={<BookmarkCheck size={17} />} href="/saved"   color="var(--mint-tag)" />
-        ) : (
-          <StatCard label="Queries Today"    value={logs.filter(l => {
-            const today = new Date(); const d = new Date(l.created_at)
-            return d.getDate() === today.getDate() && d.getMonth() === today.getMonth()
-          }).length} icon={<Clock size={17} />} href="/history" color="var(--mint-steel)" />
-        )}
+        <StatCard label="Saved Queries"    value={saved}          icon={<BookmarkCheck size={17} />} href="/saved"   color="var(--mint-tag)" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -166,21 +141,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      {!canSave && !admin && (
-        <div className="mint-soft p-4 flex items-center gap-3">
-          <Eye size={20} style={{ color: "var(--mint-tag)", opacity: 0.8 }} className="shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-foreground/80">Read-Only Access</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Browse query history and shared results. Contact an admin to request analyst access.
-            </p>
-          </div>
-          <Link href="/history" className="px-4 py-2 rounded-full text-xs font-medium text-primary-foreground shrink-0 bg-primary">
-            Browse History
-          </Link>
-        </div>
-      )}
     </div>
   )
 }

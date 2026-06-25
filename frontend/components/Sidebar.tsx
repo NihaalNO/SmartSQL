@@ -1,31 +1,32 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
-  LayoutDashboard, Search, History,
-  BookmarkCheck, Zap, LogOut,
-  PanelLeftClose, PanelLeftOpen,
+  LayoutDashboard,
+  Search,
+  History,
+  BookmarkCheck,
+  Zap,
+  PanelLeftClose,
+  PanelLeftOpen,
   Settings,
+  Menu,
+  X,
+  LogOut,
 } from "lucide-react"
-import { logout, getUser } from "@/lib/auth"
+import { getUser, logout } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 import { SmartSQLLogo } from "@/components/brand/SmartSQLLogo"
 
 const ALL_NAV = [
-  { href: "/dashboard", label: "Dashboard",    icon: LayoutDashboard, roles: ["analyst", "viewer"] },
-  { href: "/query",     label: "Query",         icon: Search,          roles: ["analyst", "viewer"] },
-  { href: "/history",   label: "History",       icon: History,         roles: ["analyst", "viewer"] },
-  { href: "/saved",     label: "Saved Queries", icon: BookmarkCheck,   roles: ["analyst"] },
-  { href: "/live-db",   label: "Live DB Mode",  icon: Zap,             roles: ["analyst"] },
-  { href: "/settings",  label: "Settings",      icon: Settings,        roles: ["analyst", "viewer"] },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/query", label: "Query", icon: Search },
+  { href: "/history", label: "History", icon: History },
+  { href: "/saved", label: "Saved Queries", icon: BookmarkCheck },
+  { href: "/live-db", label: "Live DB Mode", icon: Zap },
+  { href: "/settings", label: "Settings", icon: Settings },
 ] as const
-
-const ROLE_META: Record<string, { label: string; color: string }> = {
-  admin:   { label: "Admin",   color: "var(--mint-error)" },
-  analyst: { label: "Analyst", color: "var(--mint-tag)" },
-  viewer:  { label: "Viewer",  color: "var(--mint-green-deep)" },
-}
 
 function getInitials(name: string) {
   const parts = name.trim().split(" ")
@@ -35,8 +36,9 @@ function getInitials(name: string) {
 }
 
 export default function Sidebar() {
-  const [mounted,   setMounted]   = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -45,139 +47,149 @@ export default function Sidebar() {
     if (saved === "true") setCollapsed(true)
   }, [])
 
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
+
   const toggle = () => {
-    setCollapsed(c => {
-      localStorage.setItem("sidebar-collapsed", String(!c))
-      return !c
+    setCollapsed((current) => {
+      localStorage.setItem("sidebar-collapsed", String(!current))
+      return !current
     })
   }
 
-  const user  = mounted ? getUser() : null
-  const role  = user?.role ?? ""
-  const nav   = mounted
-    ? ALL_NAV.filter(item => (item.roles as readonly string[]).includes(role))
-    : []
-  const badge = ROLE_META[role]
+  const user = mounted ? getUser() : null
+  const expanded = !collapsed || mobileOpen
 
   return (
-    <aside
-      className={cn(
-        "min-h-screen flex flex-col flex-shrink-0 transition-all duration-300 ease-in-out",
-        "border-r border-border bg-card",
-        collapsed ? "w-16" : "w-60"
-      )}
-    >
-      <div className={cn(
-        "flex items-center pt-5 pb-4 overflow-hidden transition-all duration-300",
-        collapsed ? "justify-center px-0" : "px-4"
-      )}>
-        <SmartSQLLogo variant="icon" size={32} className="shrink-0" />
-        {!collapsed && (
-          <SmartSQLLogo variant="wordmark" className="ml-2.5 text-sm" />
-        )}
-      </div>
+    <>
+      <button
+        type="button"
+        onClick={() => setMobileOpen(true)}
+        className="fixed left-3 top-3 z-40 inline-flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-sm transition-colors hover:bg-secondary md:hidden"
+        aria-label="Open navigation"
+      >
+        <Menu size={18} />
+      </button>
 
-      {user && (
-        <>
-          <div className={cn(
-            "flex items-center gap-3 pb-3 overflow-hidden transition-all duration-300",
-            collapsed ? "justify-center px-0" : "px-4"
-          )}>
-            <div
-              className="shrink-0 rounded-full flex items-center justify-center text-xs font-semibold text-primary-foreground bg-primary"
-              style={{ width: "32px", height: "32px" }}
-              title={collapsed ? (user.full_name ?? "") : undefined}
-            >
-              {getInitials(user.full_name ?? "U")}
-            </div>
-            {!collapsed && (
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate text-foreground/90">
-                  {user.full_name}
-                </p>
-                <p className="text-xs truncate text-muted-foreground">
-                  {user.email}
-                </p>
-              </div>
+      {mobileOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/20 md:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      <aside
+        className={cn(
+          "z-50 flex flex-col items-stretch overflow-hidden rounded-xl border border-border bg-card transition-all duration-300 ease-in-out",
+          "fixed left-3 top-3 max-h-[calc(100dvh-24px)] w-[min(280px,calc(100vw-24px))] shadow-xl md:sticky md:left-auto md:top-3 md:shrink-0 md:self-start md:shadow-none",
+          collapsed ? "md:w-16" : "md:w-[272px]",
+          mobileOpen ? "translate-x-0" : "-translate-x-[calc(100%+24px)] md:translate-x-0"
+        )}
+      >
+        <div
+          className={cn(
+            "flex items-center gap-2 px-3 py-3",
+            collapsed ? "md:justify-center md:px-2" : "justify-between"
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-2.5">
+            <SmartSQLLogo variant="icon" size={30} className="shrink-0" />
+            {expanded && <SmartSQLLogo variant="wordmark" className="text-sm" />}
+          </div>
+
+          <button
+            type="button"
+            onClick={toggle}
+            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={cn(
+              "hidden h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:inline-flex",
+              collapsed && "md:absolute md:right-2 md:top-3"
             )}
-          </div>
-          <div className="h-px mx-4 mb-2 bg-border" />
-        </>
-      )}
+          >
+            {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          </button>
 
-      <nav className="flex-1 space-y-0.5 px-2">
-        {nav.map(({ href, label, icon: Icon }) => {
-          const active = pathname.startsWith(href)
-          return (
-            <Link
-              key={href}
-              href={href}
-              title={collapsed ? label : undefined}
+          <button
+            type="button"
+            onClick={() => setMobileOpen(false)}
+            className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:hidden"
+            aria-label="Close navigation"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {user && (
+          <>
+            <div
               className={cn(
-                "flex items-center rounded-md transition-colors duration-150 overflow-hidden group relative",
-                collapsed ? "justify-center py-2.5" : "gap-2.5 px-3 py-2",
-                active
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                "flex items-center gap-3 px-3 pb-3 pt-1",
+                collapsed && "md:justify-center md:px-2"
               )}
             >
-              {active && (
-                <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-accent" />
+              {user.avatar_url ? (
+                <img
+                  src={user.avatar_url}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                  title={!expanded ? user.full_name : undefined}
+                />
+              ) : (
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
+                  title={!expanded ? (user.full_name ?? "") : undefined}
+                >
+                  {getInitials(user.full_name ?? "U")}
+                </div>
               )}
-              <Icon size={16} strokeWidth={active ? 2.5 : 1.8} className="shrink-0" />
-              {!collapsed && (
-                <span className="text-sm whitespace-nowrap">{label}</span>
+              {expanded && (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-foreground/90">{user.full_name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                </div>
               )}
-            </Link>
-          )
-        })}
-      </nav>
-
-      <div className="px-2 pb-2">
-        <button
-          onClick={toggle}
-          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={cn(
-            "flex items-center w-full rounded-md transition-colors duration-150 text-sm",
-            collapsed ? "justify-center py-2.5" : "gap-2.5 px-3 py-2",
-            "text-muted-foreground hover:bg-secondary hover:text-foreground"
-          )}
-        >
-          {collapsed
-            ? <PanelLeftOpen  size={16} className="shrink-0" />
-            : <PanelLeftClose size={16} className="shrink-0" />
-          }
-          {!collapsed && <span>Collapse</span>}
-        </button>
-      </div>
-
-      <div className={cn(
-        "pt-2 pb-4 border-t border-border overflow-hidden transition-all duration-300",
-        collapsed ? "px-0" : "px-4"
-      )}>
-        {badge && !collapsed && (
-          <div className="mb-2">
-            <span
-              className="inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full border border-border bg-secondary font-medium"
-              style={{ color: badge.color }}
-            >
-              {badge.label}
-            </span>
-          </div>
+              {expanded && (
+                <button
+                  type="button"
+                  onClick={logout}
+                  title="Sign out"
+                  className="ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+                >
+                  <LogOut size={14} />
+                </button>
+              )}
+            </div>
+            <div className="mx-3 h-px bg-border" />
+          </>
         )}
-        <button
-          onClick={logout}
-          title={collapsed ? "Sign out" : undefined}
-          className={cn(
-            "flex items-center w-full text-xs transition-colors",
-            collapsed ? "justify-center" : "gap-2",
-            "text-muted-foreground hover:text-destructive"
-          )}
-        >
-          <LogOut size={14} className="shrink-0" />
-          {!collapsed && <span>Sign out</span>}
-        </button>
-      </div>
-    </aside>
+
+        <nav className="h-auto space-y-1 px-2 py-3">
+          {ALL_NAV.map(({ href, label, icon: Icon }) => {
+            const active = pathname.startsWith(href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                title={!expanded ? label : undefined}
+                className={cn(
+                  "relative flex min-h-10 items-center rounded-md transition-colors duration-150",
+                  collapsed ? "justify-center px-2" : "gap-2.5 px-3",
+                  active
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                {active && <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-full bg-accent" />}
+                <Icon size={16} strokeWidth={active ? 2.5 : 1.8} className="shrink-0" />
+                {expanded && <span className="truncate text-sm">{label}</span>}
+              </Link>
+            )
+          })}
+        </nav>
+      </aside>
+    </>
   )
 }

@@ -8,33 +8,30 @@ export interface TokenResponse {
   user_id: number;
   full_name: string;
   email: string;
-  role: string;
   email_verified: boolean;
+  created_at?: string | Date;
+  updated_at?: string | Date | null;
+  avatar_url?: string | null;
 }
 
 export interface UserOut {
   id: number;
   full_name: string;
   email: string;
-  role: string;
   status: string;
   email_verified: boolean;
   created_at: string | Date;
+  updated_at?: string | Date | null;
+  avatar_url?: string | null;
 }
 
 export interface RegisterRequest {
   full_name: string;
   email: string;
   password: string;
-  role?: string;
 }
 
 export interface LoginRequest {
   email: string;
   password: string;
-}
-
-export interface AdminLoginRequest {
-  admin_name: string;
-  admin_code: string;
 }

@@ -40,7 +40,7 @@ api.interceptors.response.use(
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 export const authApi = {
-  register: (data: { full_name: string; email: string; password: string; role?: string }) =>
+  register: (data: { full_name: string; email: string; password: string }) =>
     api.post("/api/auth/register", data).then((r) => r.data),
 
   login: (email: string, password: string) =>
@@ -48,9 +48,6 @@ export const authApi = {
 
   loginWithGoogle: (data: { code: string; redirect_uri?: string }) =>
     api.post("/api/auth/login/google", data).then((r) => r.data),
-
-  adminLogin: (admin_name: string, admin_code: string) =>
-    api.post("/api/auth/admin-login", { admin_name, admin_code }).then((r) => r.data),
 
   verifyEmail: (token: string) =>
     api.get(`/api/auth/verify-email?token=${token}`).then((r) => r.data),
@@ -143,12 +140,3 @@ export const schemaApi = {
 }
 
 // ── Admin (moderator panel) ────────────────────────────────────────────────────
-
-export const adminApi = {
-  stats:            ()                                       => modApi.get("/api/admin/stats").then((r) => r.data),
-  users:            ()                                       => modApi.get("/api/admin/users").then((r) => r.data),
-  logs:             (limit = 100)                            => modApi.get(`/api/admin/logs?limit=${limit}`).then((r) => r.data),
-  updateUserStatus: (id: number, status: string)             => modApi.patch(`/api/admin/users/${id}/status`, { status }).then((r) => r.data),
-  updateUserRole:   (id: number, role_name: string)          => modApi.patch(`/api/admin/users/${id}/role`, { role_name }).then((r) => r.data),
-  deleteUser:       (id: number)                             => modApi.delete(`/api/admin/users/${id}`).then((r) => r.data),
-}

@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { label: "Features", href: "#features" },
   { label: "Docs", href: "#docs" },
   { label: "Security", href: "#security" },
-  { label: "Pricing", href: "#pricing" },
+  { label: "Access", href: "#access" },
 ]
 
 const FEATURES = [
@@ -51,11 +51,11 @@ const SECURITY = [
   "Fresh pg.Client per live connection, closed in finally",
 ]
 
-const PLANS = [
-  { feature: "Natural language SQL", viewer: "Read", analyst: "Run", admin: "Run" },
-  { feature: "Save queries", viewer: "-", analyst: "Included", admin: "Included" },
-  { feature: "Live DB mode", viewer: "-", analyst: "Included", admin: "Included" },
-  { feature: "User management", viewer: "-", analyst: "-", admin: "Included" },
+const ACCESS_ROWS = [
+  { feature: "Natural language SQL", availability: "Included" },
+  { feature: "Save queries", availability: "Included" },
+  { feature: "Live DB mode", availability: "Included" },
+  { feature: "Query history", availability: "Included" },
 ]
 
 function Navbar() {
@@ -93,7 +93,7 @@ function ProductMockup() {
       <div className="grid min-h-[420px] lg:grid-cols-[220px_1fr]">
         <aside className="hidden border-r border-border bg-secondary p-4 lg:block">
           <p className="mint-kicker mb-3">Schema</p>
-          {["users", "roles", "query_logs", "saved_queries", "live_db_sessions"].map((table, index) => (
+          {["users", "query_logs", "saved_queries", "feedback", "live_db_sessions"].map((table, index) => (
             <div key={table} className={`mb-1 rounded-md px-3 py-2 text-sm ${index === 2 ? "bg-card font-medium text-foreground" : "text-muted-foreground"}`}>
               <Database className="mr-2 inline h-3.5 w-3.5" />
               {table}
@@ -114,7 +114,7 @@ function ProductMockup() {
             <div className="rounded-lg border border-border bg-secondary p-4">
               <p className="mint-kicker">Prompt</p>
               <p className="mt-2 text-sm leading-relaxed text-foreground">
-                Show successful queries by user role this month, grouped by status and ordered by execution speed.
+                Show successful queries this month, grouped by status and ordered by execution speed.
               </p>
             </div>
 
@@ -125,14 +125,13 @@ function ProductMockup() {
               </div>
               <pre className="mint-code border-0">
 {`SELECT
-  u.role_name,
   q.execution_status,
   COUNT(*) AS total_queries,
   AVG(q.execution_time_ms) AS avg_runtime
 FROM query_logs q
 JOIN users u ON q.user_id = u.id
 WHERE q.created_at >= DATE_TRUNC('month', NOW())
-GROUP BY u.role_name, q.execution_status
+GROUP BY q.execution_status
 ORDER BY avg_runtime ASC
 LIMIT 100;`}
               </pre>
@@ -217,7 +216,7 @@ export default function HomePage() {
           <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[240px_1fr_220px]">
             <aside className="hidden lg:block">
               <p className="mint-kicker mb-3">Guides</p>
-              {["Run Query", "Live DB", "Schema", "History", "Admin"].map((item, index) => (
+              {["Run Query", "Live DB", "Schema", "History", "Saved"].map((item, index) => (
                 <div key={item} className={`rounded-md px-3 py-2 text-sm ${index === 0 ? "bg-secondary font-medium text-foreground" : "text-muted-foreground"}`}>
                   {item}
                 </div>
@@ -248,7 +247,7 @@ export default function HomePage() {
             <aside className="hidden lg:block">
               <p className="mint-kicker mb-3">On this page</p>
               {["Features", "API Shape", "Security", "Access"].map((item, index) => (
-                <a key={item} href={`#${index === 0 ? "features" : index === 1 ? "docs" : index === 2 ? "security" : "pricing"}`} className={`block py-1 text-sm ${index === 1 ? "font-medium text-foreground" : "text-muted-foreground"}`}>
+                <a key={item} href={`#${index === 0 ? "features" : index === 1 ? "docs" : index === 2 ? "security" : "access"}`} className={`block py-1 text-sm ${index === 1 ? "font-medium text-foreground" : "text-muted-foreground"}`}>
                   {item}
                 </a>
               ))}
@@ -276,13 +275,13 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="pricing" className="px-6 py-20">
+        <section id="access" className="px-6 py-20">
           <div className="mx-auto max-w-6xl">
             <div className="mx-auto mb-10 max-w-2xl text-center">
               <p className="mint-kicker">Access</p>
-              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.5px]">Roles map cleanly to workflows.</h2>
+              <h2 className="mt-3 text-3xl font-semibold tracking-[-0.5px]">One workspace for every signed-in user.</h2>
               <p className="mt-3 text-base leading-7 text-muted-foreground">
-                Viewers explore shared history. Analysts generate and save queries. Admins manage users and platform activity.
+                Every authenticated profile can generate SQL, save useful queries, review history, and connect live databases.
               </p>
             </div>
 
@@ -290,18 +289,16 @@ export default function HomePage() {
               <table className="w-full text-sm">
                 <thead className="bg-secondary">
                   <tr>
-                    {["Capability", "Viewer", "Analyst", "Admin"].map((head) => (
+                    {["Capability", "Availability"].map((head) => (
                       <th key={head} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-[0.04em] text-muted-foreground">{head}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {PLANS.map((row) => (
+                  {ACCESS_ROWS.map((row) => (
                     <tr key={row.feature} className="border-t border-border">
                       <td className="px-5 py-4 font-medium">{row.feature}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{row.viewer}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{row.analyst}</td>
-                      <td className="px-5 py-4 text-muted-foreground">{row.admin}</td>
+                      <td className="px-5 py-4 text-muted-foreground">{row.availability}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -341,7 +338,7 @@ export default function HomePage() {
             </p>
           </div>
           {[
-            ["Product", "Features", "Live DB", "Schema", "Admin"],
+            ["Product", "Features", "Live DB", "Schema", "Saved Queries"],
             ["Resources", "Documentation", "API Reference", "Security", "Status"],
             ["Company", "About", "Contact", "Privacy", "Terms"],
           ].map(([heading, ...links]) => (

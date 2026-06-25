@@ -11,7 +11,6 @@ import SQLPreview   from "@/components/SQLPreview"
 import ResultsTable from "@/components/ResultsTable"
 import ChartView    from "@/components/ChartView"
 import { queryApi } from "@/lib/api"
-import { canSaveQueries } from "@/lib/auth"
 import type { QueryResult, QueryIntent } from "@/types"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -237,7 +236,7 @@ export default function QueryPage() {
 
           {result.log_id && result.status !== "need_context" && (
             <div className="flex items-center gap-3 flex-wrap pt-1">
-              {canSaveQueries() && (result.status === "success" || result.status === "template") && (
+              {(result.status === "success" || result.status === "template") && (
                 <Button
                   variant="secondary"
                   size="sm"

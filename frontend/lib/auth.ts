@@ -2,9 +2,11 @@ export interface AuthUser {
   user_id: number
   full_name: string
   email: string
-  role: string
   access_token: string
   email_verified: boolean
+  created_at?: string
+  updated_at?: string | null
+  avatar_url?: string | null
 }
 
 export function saveAuth(data: AuthUser) {
@@ -22,6 +24,8 @@ export function getUser(): AuthUser | null {
   return raw ? JSON.parse(raw) : null
 }
 
+export const getCurrentUser = getUser
+
 export function logout() {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem("user")
@@ -33,23 +37,17 @@ export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false
   const raw = sessionStorage.getItem("user")
   if (!raw) return false
-  try { return !!JSON.parse(raw).access_token } catch { return false }
+  try {
+    return !!JSON.parse(raw).access_token
+  } catch {
+    return false
+  }
 }
+
+export const isAuthenticated = isLoggedIn
+export const requireAuth = isLoggedIn
 
 export function isEmailVerified(): boolean {
   const user = getUser()
   return user?.email_verified ?? false
 }
-
-export function getRole(): string {
-  return getUser()?.role ?? ""
-}
-
-export function hasRole(...roles: string[]): boolean {
-  return roles.includes(getRole())
-}
-
-// Convenience shorthands — admin has its own panel, not the main app
-export const canSaveQueries = () => hasRole("analyst")
-export const canUseLiveDb   = () => hasRole("analyst")
-export const isAdmin        = () => hasRole("admin")
